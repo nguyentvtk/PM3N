@@ -21,6 +21,20 @@ export async function POST(req: NextRequest) {
     const loaiVanBan = formData.get('loaiVanBan') as string;
     const tenTaiLieu = formData.get('tenTaiLieu') as string;
     const mucDo = (formData.get('mucDo') as HoSo['MucDo']) || 'Thường';
+    const lanhDaoDuyet = (formData.get('lanhDaoDuyet') as string) || '';
+    const kyhieuDVtrinh = (formData.get('kyhieuDVtrinh') as string) || '';
+
+    // Map loaiVanBan → Ma_Loaitailieu
+    const MA_LOAI_MAP: Record<string, string> = {
+      'Quyết định': 'QĐ',
+      'Tờ trình': 'TTr',
+      'Công văn': 'CV',
+      'Hợp đồng': 'HĐ',
+      'Bản ghi nhớ (MOU)': 'MOU',
+      'Báo cáo': 'BC',
+      'Thông báo': 'TB',
+    };
+    const maLoaitailieu = MA_LOAI_MAP[loaiVanBan] || loaiVanBan;
 
     if (!file || !maDA || !tenDuan || !loaiVanBan || !tenTaiLieu) {
       return NextResponse.json({ success: false, error: 'Thiếu thông tin bắt buộc' }, { status: 400 });
@@ -67,8 +81,11 @@ export async function POST(req: NextRequest) {
       MaDA: maDA,
       TenTaiLieu: tenTaiLieu,
       LoaiVanBan: loaiVanBan,
+      LoaiVB: loaiVanBan,
+      Ma_Loaitailieu: maLoaitailieu,
+      Kyhieu_DVtrinh: kyhieuDVtrinh,
       NguoiTrinh: user.maNV || '',
-      LanhDaoDuyet: '', // Sẽ cập nhật khi trình
+      LanhDaoDuyet: lanhDaoDuyet,
       MucDo: mucDo,
       NgayTrinh: new Date().toISOString(),
       TrangThai: 'cho_trinh',
