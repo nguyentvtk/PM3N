@@ -1,0 +1,16 @@
+# npm audit report
+
+next  9.5.0 - 15.5.13
+Severity: high
+Next.js self-hosted applications vulnerable to DoS via Image Optimizer remotePatterns configuration - https://github.com/advisories/GHSA-9g9p-9gw9-jx7f
+Next.js HTTP request deserialization can lead to DoS when using insecure React Server Components - https://github.com/advisories/GHSA-h25m-26qc-wcjf
+Next.js: HTTP request smuggling in rewrites - https://github.com/advisories/GHSA-ggv3-7p47-pfv8
+Next.js: Unbounded next/image disk cache growth can exhaust storage - https://github.com/advisories/GHSA-3x4c-7xq6-9pq8
+fix available via `npm audit fix --force`
+Will install next@16.2.2, which is a breaking change
+node_modules/next
+
+1 high severity vulnerability
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force

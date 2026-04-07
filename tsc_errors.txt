@@ -1,0 +1,24 @@
+app/api/drive/save/route.ts(18,10): error TS2724: '"@/lib/sheets"' has no exported member named 'getHoSoById'. Did you mean 'getHoSoByMa'?
+app/api/sheets/ho-so/route.ts(72,11): error TS2741: Property 'TenDuan' is missing in type '{ MaHoSo: string; MaDA: string; TenTaiLieu: string; NguoiTrinh: string; LanhDaoDuyet: string; MucDo: MucDo; NgayTrinh: string; TrangThai: "cho_trinh"; FilePath: string; LinkKySo: string; }' but required in type 'HoSo'.
+app/layout.tsx(4,10): error TS2305: Module '"next/font/google"' has no exported member 'Geist'.
+components/layout/Topbar.tsx(4,10): error TS2305: Module '"@/lib/utils"' has no exported member 'VAI_TRO_CONFIG'.
+components/pages/DashboardPage.tsx(5,10): error TS2305: Module '"@/lib/utils"' has no exported member 'TRANG_THAI_CONFIG'.
+components/pages/DashboardPage.tsx(5,29): error TS2305: Module '"@/lib/utils"' has no exported member 'formatDateTime'.
+components/pages/DashboardPage.tsx(5,45): error TS2305: Module '"@/lib/utils"' has no exported member 'timeAgo'.
+components/pages/DashboardPage.tsx(5,54): error TS2305: Module '"@/lib/utils"' has no exported member 'apiGet'.
+components/pages/DashboardPage.tsx(18,14): error TS7006: Parameter 'data' implicitly has an 'any' type.
+components/pages/DashboardPage.tsx(22,34): error TS7006: Parameter 'h' implicitly has an 'any' type.
+components/pages/DashboardPage.tsx(23,35): error TS7006: Parameter 'h' implicitly has an 'any' type.
+components/pages/DashboardPage.tsx(24,33): error TS7006: Parameter 'h' implicitly has an 'any' type.
+components/pages/DashboardPage.tsx(25,32): error TS7006: Parameter 'h' implicitly has an 'any' type.
+components/pages/DashboardPage.tsx(26,30): error TS7006: Parameter 'h' implicitly has an 'any' type.
+components/pages/DashboardPage.tsx(27,35): error TS7006: Parameter 'h' implicitly has an 'any' type.
+components/pages/HoSoPage.tsx(4,10): error TS2305: Module '"@/lib/utils"' has no exported member 'TRANG_THAI_CONFIG'.
+components/pages/HoSoPage.tsx(4,29): error TS2305: Module '"@/lib/utils"' has no exported member 'MUC_DO_CONFIG'.
+components/pages/HoSoPage.tsx(4,44): error TS2305: Module '"@/lib/utils"' has no exported member 'formatDateTime'.
+components/pages/HoSoPage.tsx(4,60): error TS2305: Module '"@/lib/utils"' has no exported member 'apiGet'.
+components/pages/HoSoPage.tsx(4,68): error TS2305: Module '"@/lib/utils"' has no exported member 'apiPost'.
+components/pages/LogPage.tsx(4,10): error TS2305: Module '"@/lib/utils"' has no exported member 'formatDateTime'.
+components/pages/LogPage.tsx(4,26): error TS2305: Module '"@/lib/utils"' has no exported member 'apiGet'.
+components/pages/NguoiDungPage.tsx(4,10): error TS2305: Module '"@/lib/utils"' has no exported member 'VAI_TRO_CONFIG'.
+components/pages/NguoiDungPage.tsx(4,26): error TS2305: Module '"@/lib/utils"' has no exported member 'apiGet'.

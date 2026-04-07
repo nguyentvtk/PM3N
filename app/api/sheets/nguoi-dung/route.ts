@@ -5,8 +5,8 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { getAllNguoiDung, createNguoiDung, getNguoiDungByEmail } from '@/lib/sheets';
+import { authOptions } from '@/lib/auth-config';
+import { getAllNguoiDung, createNguoiDung, getNguoiDungByEmail, updateNguoiDung, deleteNguoiDung } from '@/lib/sheets';
 import { appendLog } from '@/lib/sheets';
 import bcrypt from 'bcryptjs';
 import type { NguoiDung, ExtendedUser } from '@/types';
@@ -73,11 +73,69 @@ export async function POST(req: NextRequest) {
 
     await appendLog('', 'TAO_MOI', `Tạo người dùng mới: ${body.MaNV} - ${body.Ten}`);
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { MatKhau: _, ...safe } = { ...body, MatKhau: matKhau };
     return apiResponse(safe, 201);
 
   } catch (err) {
     console.error('POST /api/sheets/nguoi-dung:', err);
+    return apiError('Lỗi server', 500);
+  }
+}
+
+// PUT /api/sheets/nguoi-dung
+export async function PUT(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) return apiError('Chưa đăng nhập', 401);
+
+  const user = session.user as ExtendedUser;
+  if (user.vaiTro !== 'admin') return apiError('Không có quyền chỉnh sửa người dùng', 403);
+
+  try {
+    const { maNV, ...data } = await req.json();
+    if (!maNV) return apiError('Thiếu MaNV');
+
+    // Nếu có đổi mật khẩu
+    if (data.MatKhau) {
+      data.MatKhau = await bcrypt.hash(data.MatKhau, 10);
+    }
+
+    const success = await updateNguoiDung(maNV, data);
+    if (!success) return apiError('Không tìm thấy người dùng hoặc cập nhật thất bại', 404);
+
+    await appendLog('', 'CAP_NHAT', `Cập nhật thông tin người dùng: ${maNV}`);
+    return apiResponse({ maNV, ...data });
+
+  } catch (err) {
+    console.error('PUT /api/sheets/nguoi-dung:', err);
+    return apiError('Lỗi server', 500);
+  }
+}
+
+// DELETE /api/sheets/nguoi-dung
+export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) return apiError('Chưa đăng nhập', 401);
+
+  const user = session.user as ExtendedUser;
+  if (user.vaiTro !== 'admin') return apiError('Không có quyền xóa người dùng', 403);
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const maNV = searchParams.get('maNV');
+    if (!maNV) return apiError('Thiếu MaNV');
+
+    // Chặn xóa chính mình
+    if (user.maNV === maNV) return apiError('Không thể tự xóa tài khoản của chính mình');
+
+    const success = await deleteNguoiDung(maNV);
+    if (!success) return apiError('Xóa thất bại hoặc không tìm thấy người dùng', 404);
+
+    await appendLog('', 'XOA', `Xóa người dùng: ${maNV}`);
+    return apiResponse({ maNV, deleted: true });
+
+  } catch (err) {
+    console.error('DELETE /api/sheets/nguoi-dung:', err);
     return apiError('Lỗi server', 500);
   }
 }

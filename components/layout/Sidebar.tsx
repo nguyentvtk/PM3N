@@ -22,6 +22,15 @@ const NAV_ITEMS = [
     ),
   },
   {
+    href: '/soan-thao',
+    label: 'Soạn thảo',
+    icon: (
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+      </svg>
+    ),
+  },
+  {
     href: '/nguoi-dung',
     label: 'Người Dùng',
     icon: (
@@ -47,19 +56,16 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       {/* Logo */}
-      <div className="px-6 pb-6 mb-2" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="px-6 pb-6 mb-2 border-b border-subtle">
         <div className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm"
-            style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}
-          >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm brand-gradient">
             CK
           </div>
           <div>
-            <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+            <div className="font-semibold text-sm text-primary">
               Công Văn
             </div>
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            <div className="text-xs text-muted">
               PM3N — Ký Số
             </div>
           </div>
@@ -69,7 +75,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="mt-2">
         <div className="px-6 mb-2">
-          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted">
             Chức năng
           </span>
         </div>
@@ -90,7 +96,7 @@ export function Sidebar() {
 
       {/* Bottom: Version */}
       <div className="absolute bottom-4 left-0 right-0 px-6">
-        <div className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
+        <div className="text-xs text-center text-muted">
           v1.0.0 · PM3N Workspace
         </div>
       </div>

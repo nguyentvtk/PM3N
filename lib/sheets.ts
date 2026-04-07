@@ -4,7 +4,7 @@
  */
 import { google } from 'googleapis';
 import { getGoogleAuth } from './google-auth';
-import type { HoSo, NguoiDung, LogHeThong } from '@/types';
+import type { HoSo, NguoiDung, LogHeThong, DuAn } from '@/types';
 
 // ============================================================
 // Lấy Sheets client đã xác thực
@@ -139,6 +139,7 @@ const NGUOI_DUNG_HEADERS: (keyof NguoiDung)[] = [
 export async function getAllNguoiDung(): Promise<Omit<NguoiDung, 'MatKhau'>[]> {
   const data = await getSheetData<NguoiDung>('Nguoi_dung');
   // Luôn ẩn MatKhau khi lấy danh sách
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   return data.map(({ MatKhau, ...safe }) => safe);
 }
 
@@ -151,6 +152,7 @@ export async function getNguoiDungByMaNV(maNV: string): Promise<Omit<NguoiDung, 
   const data = await getSheetData<NguoiDung>('Nguoi_dung');
   const found = data.find((u) => u.MaNV === maNV);
   if (!found) return null;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { MatKhau, ...safe } = found;
   return safe;
 }
@@ -159,13 +161,94 @@ export async function createNguoiDung(data: Omit<NguoiDung, 'MatKhau'> & { MatKh
   await appendSheetRow('Nguoi_dung', data as unknown as Record<string, unknown>, NGUOI_DUNG_HEADERS);
 }
 
+export async function updateNguoiDung(maNV: string, data: Partial<NguoiDung>): Promise<boolean> {
+  const rowIndex = await findRowIndex('Nguoi_dung', 'MaNV', maNV);
+  if (rowIndex === -1) return false;
+
+  const all = await getSheetData<NguoiDung>('Nguoi_dung');
+  const current = all.find((u) => u.MaNV === maNV);
+  if (!current) return false;
+
+  const updated: NguoiDung = { ...current, ...data };
+  await updateSheetRow(
+    'Nguoi_dung',
+    rowIndex,
+    updated as unknown as Record<string, unknown>,
+    NGUOI_DUNG_HEADERS
+  );
+  return true;
+}
+
+export async function deleteNguoiDung(maNV: string): Promise<boolean> {
+  const rowIndex = await findRowIndex('Nguoi_dung', 'MaNV', maNV);
+  if (rowIndex === -1) return false;
+
+  const sheets = await getSheetsClient();
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const sheet = spreadsheet.data.sheets?.find(s => s.properties?.title === 'Nguoi_dung');
+  const sheetId = sheet?.properties?.sheetId;
+
+  if (sheetId === undefined) return false;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: 'ROWS',
+              startIndex: rowIndex - 1,
+              endIndex: rowIndex
+            }
+          }
+        }
+      ]
+    }
+  });
+  return true;
+}
+
+// Thêm hàm cập nhật mật khẩu (dùng cho flow reset password)
+export async function updateNguoiDungPassword(email: string, hashedPassword: string): Promise<boolean> {
+  const rowIndex = await findRowIndex('Nguoi_dung', 'Email', email);
+  if (rowIndex === -1) return false;
+
+  const data = await getSheetData<NguoiDung>('Nguoi_dung');
+  const current = data.find((u) => u.Email.toLowerCase() === email.toLowerCase());
+  if (!current) return false;
+
+  const updated: NguoiDung = { ...current, MatKhau: hashedPassword };
+  await updateSheetRow(
+    'Nguoi_dung',
+    rowIndex,
+    updated as unknown as Record<string, unknown>,
+    NGUOI_DUNG_HEADERS
+  );
+  return true;
+}
+
+// ============================================================
+// DU_AN specific functions
+// ============================================================
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const DU_AN_HEADERS: (keyof DuAn)[] = ['MaDA', 'TenDA', 'MoTa', 'TrangThai'];
+
+export async function getAllProjects(): Promise<DuAn[]> {
+  return getSheetData<DuAn>('Tong_Hop_Du_An');
+}
+
 // ============================================================
 // HO_SO specific functions
 // ============================================================
 
 const HO_SO_HEADERS: (keyof HoSo)[] = [
-  'MaHoSo', 'MaDA', 'TenTaiLieu', 'NguoiTrinh', 'LanhDaoDuyet',
-  'MucDo', 'NgayTrinh', 'TrangThai', 'FilePath', 'LinkKySo'
+  'MaHoSo', 'SoVanBan', 'MaDA', 'TenTaiLieu', 'LoaiVanBan', 'NguoiTrinh', 
+  'LanhDaoDuyet', 'MucDo', 'NgayTrinh', 'TrangThai', 'FilePath', 'LinkKySo', 
+  'TenDuan', 'SignerSerial', 'SignerCA', 'SignTime',
+  'So_VB', 'LoaiVB', 'Ma_Loaitailieu', 'Kyhieu_DVtrinh', 'DinhKem'
 ];
 
 export async function getAllHoSo(): Promise<HoSo[]> {
@@ -175,6 +258,10 @@ export async function getAllHoSo(): Promise<HoSo[]> {
 export async function getHoSoByMa(maHoSo: string): Promise<HoSo | null> {
   const data = await getAllHoSo();
   return data.find((h) => h.MaHoSo === maHoSo) ?? null;
+}
+
+export async function getHoSoById(id: string): Promise<HoSo | null> {
+  return getHoSoByMa(id);
 }
 
 export async function createHoSo(data: HoSo): Promise<void> {
@@ -198,6 +285,32 @@ export async function updateHoSoStatus(
     ...current,
     TrangThai: trangThai,
     LinkKySo: linkKySo ?? current.LinkKySo,
+  };
+
+  await updateSheetRow('Ho_So', rowIndex, updated as unknown as Record<string, unknown>, HO_SO_HEADERS);
+  return true;
+}
+
+/** Cập nhật thông tin ký số sau khi đóng gói PDF thành công */
+export async function updateHoSoSignature(
+  maHoSo: string,
+  serial: string,
+  ca: string,
+  signTime: string
+): Promise<boolean> {
+  const rowIndex = await findRowIndex('Ho_So', 'MaHoSo', maHoSo);
+  if (rowIndex === -1) return false;
+
+  const data = await getSheetData<HoSo>('Ho_So');
+  const current = data.find((h) => h.MaHoSo === maHoSo);
+  if (!current) return false;
+
+  const updated: HoSo = {
+    ...current,
+    TrangThai: 'da_ky',
+    SignerSerial: serial,
+    SignerCA: ca,
+    SignTime: signTime,
   };
 
   await updateSheetRow('Ho_So', rowIndex, updated as unknown as Record<string, unknown>, HO_SO_HEADERS);

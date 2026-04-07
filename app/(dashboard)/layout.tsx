@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: 'Dashboard' };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
+    <div className="min-h-screen">
       <Sidebar />
       <div className="main-content">
         <Topbar />

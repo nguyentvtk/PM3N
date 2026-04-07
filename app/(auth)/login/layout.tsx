@@ -7,10 +7,7 @@ export const metadata: Metadata = {
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="min-h-screen grid-bg flex items-center justify-center p-4"
-      style={{ background: 'var(--bg-base)' }}
-    >
+    <div className="min-h-screen grid-bg flex items-center justify-center p-4">
       {children}
     </div>
   );

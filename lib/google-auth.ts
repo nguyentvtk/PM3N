@@ -23,7 +23,12 @@ export async function getGoogleAuth(): Promise<JWT> {
   if (_authClient) return _authClient;
 
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const key = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  let key = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+  // Xử lý trường hợp Vercel tự động thêm dấu nháy kép (") vào chuỗi đa dòng
+  if (key && key.startsWith('"') && key.endsWith('"')) {
+    key = key.slice(1, -1);
+  }
 
   if (!email || !key) {
     throw new Error(

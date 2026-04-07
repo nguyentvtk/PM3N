@@ -17,24 +17,78 @@ const HANH_DONG_COLOR: Record<string, string> = {
 export function LogPage() {
   const [logs, setLogs] = useState<LogHeThong[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [actionFilter, setActionFilter] = useState('');
 
-  useEffect(() => {
-    apiGet<LogHeThong[]>('/api/sheets/log?limit=200')
+  const fetchLogs = (limit = 200) => {
+    setLoading(true);
+    apiGet<LogHeThong[]>(`/api/sheets/log?limit=${limit}`)
       .then(setLogs)
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchLogs();
   }, []);
+
+  const filteredLogs = logs.filter(log => {
+    const matchSearch = searchTerm === '' || 
+      (log.MaHoSo && log.MaHoSo.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (log.ChiTiet && log.ChiTiet.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchAction = actionFilter === '' || log.HanhDong === actionFilter;
+    
+    return matchSearch && matchAction;
+  });
+
+  const actions = Array.from(new Set(logs.map(l => l.HanhDong))).sort();
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header items-start">
         <div>
           <h1 className="page-title">Nhật Ký Hệ Thống</h1>
-          <p className="page-subtitle">Lịch sử hoạt động và thay đổi dữ liệu</p>
+          <p className="page-subtitle">Lịch sử hoạt động và thay đổi dữ liệu trên toàn hệ thống</p>
         </div>
-        <span className="badge" style={{ background: 'rgba(139,92,246,0.1)', borderColor: 'rgba(139,92,246,0.2)', color: '#8b5cf6' }}>
-          {logs.length} bản ghi
-        </span>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <input 
+              type="text"
+              placeholder="Mã hồ sơ / Nội dung..."
+              className="input pl-10 w-64"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              title="Tìm kiếm nhật ký"
+            />
+            <svg 
+              className="absolute left-3 top-2.5 text-muted" 
+              width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <select 
+            className="select w-40"
+            value={actionFilter}
+            onChange={(e) => setActionFilter(e.target.value)}
+            title="Lọc theo hành động"
+          >
+            <option value="">Tất cả hành động</option>
+            {actions.map(act => (
+              <option key={act} value={act}>{act}</option>
+            ))}
+          </select>
+          <button 
+            onClick={() => fetchLogs()} 
+            className="p-2 rounded-lg bg-bg-elevated border border-border hover:border-border-strong text-muted hover:text-primary transition-all"
+            title="Làm mới"
+          >
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="card !p-0 overflow-hidden">
@@ -43,7 +97,7 @@ export function LogPage() {
             <div className="spinner" />
           </div>
         ) : logs.length === 0 ? (
-          <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>
+          <div className="text-center py-16 text-muted">
             <div className="text-4xl mb-3">📋</div>
             <p className="text-sm">Chưa có log nào</p>
           </div>
@@ -59,21 +113,21 @@ export function LogPage() {
               </tr>
             </thead>
             <tbody>
-              {logs.map((log, idx) => (
-                <tr key={`${log.ID}-${idx}`}>
+              {filteredLogs.map((log, idx) => (
+                <tr key={`${log.ID}-${log.Timestamp}-${idx}`}>
                   <td className="pl-6">
-                    <span className="mono text-xs" style={{ color: 'var(--text-muted)' }}>
+                    <span className="mono text-xs text-muted">
                       {log.ID}
                     </span>
                   </td>
-                  <td className="text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
+                  <td className="text-xs whitespace-nowrap text-muted">
                     {log.Timestamp ? formatDateTime(log.Timestamp) : '—'}
                   </td>
                   <td>
                     {log.MaHoSo ? (
-                      <span className="mono" style={{ color: 'var(--accent-blue)' }}>{log.MaHoSo}</span>
+                      <span className="mono text-blue-500">{log.MaHoSo}</span>
                     ) : (
-                      <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      <small className="text-muted">—</small>
                     )}
                   </td>
                   <td>
@@ -81,7 +135,7 @@ export function LogPage() {
                       {log.HanhDong}
                     </span>
                   </td>
-                  <td className="pr-6 text-xs" style={{ color: 'var(--text-secondary)', maxWidth: 300 }}>
+                  <td className="pr-6 text-xs text-slate-400 max-w-[300px]">
                     <span className="block truncate">{log.ChiTiet}</span>
                   </td>
                 </tr>

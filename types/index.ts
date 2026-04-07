@@ -14,7 +14,15 @@ export interface NguoiDung {
   MatKhau?: string;       // Chỉ dùng server-side, không expose ra client
 }
 
-export type VaiTro = 'admin' | 'lanh_dao' | 'nhan_vien' | 'ke_toan';
+export type VaiTro = 'admin' | 'lanh_dao' | 'van_thu' | 'nhan_vien' | 'ke_toan';
+// Mapping tên hiển thị
+export const VAI_TRO_LABEL: Record<VaiTro, string> = {
+  admin:      'Quản trị viên',
+  lanh_dao:   'Lãnh đạo',
+  van_thu:    'Văn thư',
+  nhan_vien:  'Nhân viên',
+  ke_toan:    'Kế toán',
+};
 
 // Dữ liệu an toàn trả về client (không có MatKhau)
 export type NguoiDungPublic = Omit<NguoiDung, 'MatKhau'>;
@@ -22,16 +30,35 @@ export type NguoiDungPublic = Omit<NguoiDung, 'MatKhau'>;
 // ---- Hồ Sơ ----
 export interface HoSo {
   MaHoSo: string;         // HS-001, HS-002...
+  SoVanBan?: string;      // Số văn bản chính thức (Văn thư cấp)
+  So_VB?: string;         // [NEW] Số văn bản (Số hiệu đăng ký)
   MaDA: string;           // Mã dự án liên quan
   TenTaiLieu: string;     // Tên đầy đủ tài liệu
+  LoaiVanBan?: string;    // Quyết định, Tờ trình, Công văn...
+  LoaiVB?: string;        // [NEW] Loại văn bản (Quyết định, Tờ trình...)
+  Ma_Loaitailieu?: string;// [NEW] Ký hiệu loại văn bản (QĐ, TTr...)
+  Kyhieu_DVtrinh?: string;// [NEW] Ký hiệu đơn vị trình (VP, KTTĐ...)
   NguoiTrinh: string;     // MaNV người trình
   LanhDaoDuyet: string;   // MaNV lãnh đạo duyệt
   MucDo: MucDo;           // Mức độ bảo mật
   NgayTrinh: string;      // ISO 8601 datetime
   TrangThai: TrangThaiHoSo;
   FilePath: string;       // Google Drive URL file gốc / file đã lưu vào Drive
+  DinhKem?: string;       // [NEW] Danh sách file đính kèm (URL/ID)
   LinkKySo: string;       // Google Drive URL file đã ký số
   TenDuan: string;        // Tên dự án — dùng đặt tên thư mục Drive: {MaDA}-{TenDuan}
+  // Ký số metadata
+  SignerSerial?: string;
+  SignerCA?: string;
+  SignTime?: string;
+}
+
+// ---- Dự Án ----
+export interface DuAn {
+  MaDA: string;
+  TenDA: string;
+  MoTa?: string;
+  TrangThai?: string;
 }
 
 export type MucDo = 'Thường' | 'Khẩn' | 'Thượng khẩn' | 'Mật' | 'Tối mật';
@@ -61,8 +88,11 @@ export type HanhDong =
   | 'DUYET'
   | 'TU_CHOI'
   | 'KY_SO'
+  | 'HOAN_THANH'
   | 'DANG_NHAP'
-  | 'DANG_XUAT';
+  | 'DANG_XUAT'
+  | 'RESET_PASSWORD'
+  | 'QUEN_MAT_KHAU';
 
 // ---- API Response wrapper ----
 export interface ApiResponse<T> {

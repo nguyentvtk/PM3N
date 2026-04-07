@@ -16,12 +16,10 @@ export function Topbar() {
         {user && (
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
-              <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              <div className="text-sm font-medium text-primary">
                 {user.name}
               </div>
-              <div
-                className={`text-xs ${VAI_TRO_CONFIG[user.vaiTro || '']?.color ?? 'text-slate-400'}`}
-              >
+              <div className={`text-xs ${VAI_TRO_CONFIG[user.vaiTro || '']?.color ?? 'text-slate-400'}`}>
                 {VAI_TRO_CONFIG[user.vaiTro || '']?.label ?? user.vaiTro}
               </div>
             </div>
@@ -32,14 +30,10 @@ export function Topbar() {
               <img
                 src={user.image}
                 alt={user.name ?? ''}
-                className="w-9 h-9 rounded-full border-2"
-                style={{ borderColor: 'rgba(59,130,246,0.4)' }}
+                className="w-9 h-9 rounded-full border-2 border-blue-500/40"
               />
             ) : (
-              <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-white"
-                style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}
-              >
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-white brand-gradient">
                 {user.name?.[0] ?? 'U'}
               </div>
             )}

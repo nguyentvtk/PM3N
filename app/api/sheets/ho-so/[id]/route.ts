@@ -5,9 +5,9 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth-config';
 import { getHoSoByMa, updateHoSoStatus, appendLog } from '@/lib/sheets';
-import type { ExtendedUser, TrangThaiHoSo } from '@/types';
+import type { ExtendedUser, TrangThaiHoSo, HanhDong } from '@/types';
 
 function apiResponse<T>(data: T, status = 200) {
   return NextResponse.json({ success: true, timestamp: new Date().toISOString(), data }, { status });
@@ -88,7 +88,7 @@ export async function PATCH(
 
     await appendLog(
       params.id,
-      (hanhDongMap[newStatus] ?? 'CAP_NHAT') as any,
+      (hanhDongMap[newStatus] ?? 'CAP_NHAT') as HanhDong,
       `Trạng thái → ${newStatus} bởi ${user.maNV}`
     );
 

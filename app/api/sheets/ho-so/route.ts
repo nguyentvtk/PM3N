@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth-config';
 import {
   getAllHoSo,
   createHoSo,
@@ -73,13 +73,18 @@ export async function POST(req: NextRequest) {
       MaHoSo: body.MaHoSo || (await getNextHoSoId()),
       MaDA: body.MaDA || '',
       TenTaiLieu: body.TenTaiLieu,
+      LoaiVB: body.LoaiVB || '',
+      Ma_Loaitailieu: body.Ma_Loaitailieu || '',
+      Kyhieu_DVtrinh: body.Kyhieu_DVtrinh || '',
       NguoiTrinh: body.NguoiTrinh || user.maNV || '',
       LanhDaoDuyet: body.LanhDaoDuyet || '',
       MucDo: body.MucDo || 'Thường',
       NgayTrinh: body.NgayTrinh || new Date().toISOString(),
       TrangThai: 'cho_trinh',
       FilePath: body.FilePath || '',
+      DinhKem: body.DinhKem || '',
       LinkKySo: '',
+      TenDuan: body.TenDuan || '',
     };
 
     await createHoSo(newHoSo);
