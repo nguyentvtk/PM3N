@@ -87,10 +87,15 @@ const ROUTE_RULES: RouteRule[] = [
     allowedRoles: ['admin'],
     methods: ['POST', 'PUT', 'DELETE'],
   },
-  // API Drive finalize — admin, ke_toan
+  // API Drive upload draft — tất cả authenticated users
+  {
+    pattern: /^\/api\/drive\/upload/,
+    allowedRoles: [],  // rỗng = tất cả authenticated
+  },
+  // API Drive save (chính thức) — admin, ke_toan, van_thu
   {
     pattern: /^\/api\/drive/,
-    allowedRoles: ['admin', 'ke_toan'],
+    allowedRoles: ['admin', 'ke_toan', 'van_thu'],
   },
 ];
 

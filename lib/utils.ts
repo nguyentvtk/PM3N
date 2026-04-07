@@ -77,12 +77,12 @@ export function timeAgo(dateStr: string | Date) {
 export async function apiGet<T>(url: string): Promise<T> {
   const res = await fetch(url);
   if (!res.ok) {
+    let errMsg = `HTTP ${res.status}`;
     try {
       const errJson = await res.json();
-      throw new Error(errJson?.error?.message || errJson?.error || `HTTP ${res.status}`);
-    } catch {
-      throw new Error(`HTTP ${res.status}`);
-    }
+      errMsg = errJson?.error?.message || errJson?.error || errMsg;
+    } catch { /* body kông phải JSON */ }
+    throw new Error(errMsg);
   }
   const json = await res.json();
   return json.data;
@@ -95,12 +95,12 @@ export async function apiPost<T>(url: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
+    let errMsg = `HTTP ${res.status}`;
     try {
       const errJson = await res.json();
-      throw new Error(errJson?.error?.message || errJson?.error || `HTTP ${res.status}`);
-    } catch {
-      throw new Error(`HTTP ${res.status}`);
-    }
+      errMsg = errJson?.error?.message || errJson?.error || errMsg;
+    } catch { /* body kông phải JSON */ }
+    throw new Error(errMsg);
   }
   const json = await res.json();
   return json.data;
