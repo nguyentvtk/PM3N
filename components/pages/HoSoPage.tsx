@@ -1,12 +1,18 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { TRANG_THAI_CONFIG, MUC_DO_CONFIG, LOAI_VB_CONFIG, DON_VI_TRINH_LIST, formatDateTime, apiGet, apiPost } from '@/lib/utils';
-import type { HoSo, DuAn, NguoiDungPublic } from '@/types';
+import type { HoSo, NguoiDungPublic } from '@/types';
+
+interface SettingProject {
+  MSDA: string;
+  TenDuAn: string;
+  Nam: string;
+}
 
 export function HoSoPage() {
   const [hoSoList, setHoSoList] = useState<HoSo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [projects, setProjects] = useState<DuAn[]>([]);
+  const [projects, setProjects] = useState<SettingProject[]>([]);
   const [leaders, setLeaders] = useState<NguoiDungPublic[]>([]);
   const [filter, setFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -38,7 +44,11 @@ export function HoSoPage() {
   useEffect(() => {
     load();
     // Fetch projects
-    apiGet<DuAn[]>('/api/projects').then(setProjects).catch(console.error);
+    // Lấy dự án từ sheet Setting thay vì Tong_Hop_Du_An
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(json => { if (json.success) setProjects(json.data.projects); })
+      .catch(console.error);
     // Fetch leaders
     apiGet<NguoiDungPublic[]>('/api/sheets/nguoi-dung?vaiTro=lanh_dao').then(data => {
       const filtered = data.filter(u => u.ChucVu.includes('Giám đốc') || u.ChucVu.includes('Phó Giám đốc'));
@@ -211,22 +221,22 @@ export function HoSoPage() {
                 <select className="select text-primary" required title="Chọn dự án"
                   value={form.MaDA}
                   onChange={e => {
-                    const p = projects.find((proj: DuAn) => proj.MaDA === e.target.value);
-                    setForm({ ...form, MaDA: e.target.value, TenDuan: p?.TenDA || '' });
+                    const p = projects.find(proj => proj.MSDA === e.target.value);
+                    setForm({ ...form, MaDA: e.target.value, TenDuan: p?.TenDuAn || '' });
                   }}>
                   <option value="">-- Chọn dự án --</option>
-                  {projects.map((p: DuAn) => (
-                    <option key={p.MaDA} value={p.MaDA}>{p.TenDA} ({p.MaDA})</option>
+                  {projects.map(p => (
+                    <option key={p.MSDA} value={p.MSDA}>{p.TenDuAn}</option>
                   ))}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium mb-1 block text-muted">Mức độ</label>
-                  <select className="select text-primary" value={form.MucDo} title="Chọn mức độ"
+                  <label className="text-xs font-medium mb-1 block text-muted">Mức độ ưu tiên</label>
+                  <select className="select text-primary" value={form.MucDo} title="Chọn mức độ ưu tiên"
                     onChange={e => setForm({ ...form, MucDo: e.target.value as HoSo['MucDo'] })}>
-                    {['Thường', 'Khẩn', 'Thượng khẩn', 'Mật', 'Tối mật'].map(m => (
+                    {['Thường', 'Khẩn'].map(m => (
                       <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
