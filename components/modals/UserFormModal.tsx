@@ -60,21 +60,20 @@ export function UserFormModal({ isOpen, onClose, onSuccess, initialData }: UserF
       const url = '/api/sheets/nguoi-dung';
       const method = isEdit ? 'PUT' : 'POST';
       
-      const payload = isEdit 
+      const base = isEdit 
         ? { maNV: formData.MaNV, ...formData } 
         : formData;
 
       // Xóa MatKhau nếu để trống khi edit
+      const finalPayload: Record<string, unknown> = { ...base };
       if (isEdit && !formData.MatKhau) {
-        const updatedPayload = { ...payload } as Record<string, unknown>;
-        delete updatedPayload.MatKhau;
-        (payload as any) = updatedPayload;
+        delete finalPayload.MatKhau;
       }
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(finalPayload),
       });
 
       const result = await res.json();
