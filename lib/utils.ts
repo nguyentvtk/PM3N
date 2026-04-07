@@ -49,11 +49,11 @@ export const LOAI_VB_CONFIG: Record<string, string> = {
   'Khác':           'K',
 };
 
-export const DON_VI_TRINH_LIST = [
-  'Văn phòng (VP)',
-  'Kỹ thuật thẩm định (KTTĐ)',
-  'Tài chính Kế toán (TCKT)',
-  'Ban QLDA xã (BQLDA)',
+export const DON_VI_TRINH_LIST: { label: string; value: string }[] = [
+  { label: 'Văn phòng', value: 'VP' },
+  { label: 'Kỹ thuật thẩm định', value: 'KTTĐ' },
+  { label: 'Tài chính Kế toán', value: 'TCKT' },
+  { label: 'Ban QLDA xã', value: 'BQLDA' },
 ];
 
 // ============================================================
@@ -76,7 +76,14 @@ export function timeAgo(dateStr: string | Date) {
 
 export async function apiGet<T>(url: string): Promise<T> {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+  if (!res.ok) {
+    try {
+      const errJson = await res.json();
+      throw new Error(errJson?.error?.message || errJson?.error || `HTTP ${res.status}`);
+    } catch {
+      throw new Error(`HTTP ${res.status}`);
+    }
+  }
   const json = await res.json();
   return json.data;
 }
@@ -87,7 +94,14 @@ export async function apiPost<T>(url: string, body: unknown): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+  if (!res.ok) {
+    try {
+      const errJson = await res.json();
+      throw new Error(errJson?.error?.message || errJson?.error || `HTTP ${res.status}`);
+    } catch {
+      throw new Error(`HTTP ${res.status}`);
+    }
+  }
   const json = await res.json();
   return json.data;
 }

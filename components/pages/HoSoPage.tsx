@@ -26,7 +26,7 @@ export function HoSoPage() {
     TenDuan: '',
     LanhDaoDuyet: '',
     MucDo: 'Thường' as HoSo['MucDo'],
-    Kyhieu_DVtrinh: DON_VI_TRINH_LIST[0],
+    Kyhieu_DVtrinh: DON_VI_TRINH_LIST[0].value,
     DraftFile: null as File | null,
     AttachedFiles: [] as File[],
   });
@@ -122,7 +122,7 @@ export function HoSoPage() {
         TenDuan: '',
         LanhDaoDuyet: '',
         MucDo: 'Thường',
-        Kyhieu_DVtrinh: DON_VI_TRINH_LIST[0],
+        Kyhieu_DVtrinh: DON_VI_TRINH_LIST[0].value,
         DraftFile: null,
         AttachedFiles: []
       });
@@ -259,7 +259,7 @@ export function HoSoPage() {
                 <select className="select text-primary" value={form.Kyhieu_DVtrinh} title="Chọn đơn vị trình"
                   onChange={e => setForm({ ...form, Kyhieu_DVtrinh: e.target.value })}>
                   {DON_VI_TRINH_LIST.map(dv => (
-                    <option key={dv} value={dv}>{dv}</option>
+                    <option key={dv.value} value={dv.value}>{dv.label} ({dv.value})</option>
                   ))}
                 </select>
               </div>
