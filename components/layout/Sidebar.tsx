@@ -1,8 +1,17 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import type { ExtendedUser } from '@/types';
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  requiredRoles?: string[]; // undefined = mọi role đều thấy
+}
+
+const NAV_ITEMS: NavItem[] = [
   {
     href: '/',
     label: 'Dashboard',
@@ -33,6 +42,7 @@ const NAV_ITEMS = [
   {
     href: '/nguoi-dung',
     label: 'Người Dùng',
+    requiredRoles: ['admin'],
     icon: (
       <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -42,6 +52,7 @@ const NAV_ITEMS = [
   {
     href: '/log',
     label: 'Nhật Ký',
+    requiredRoles: ['admin', 'van_thu', 'lanh_dao', 'ke_toan'],
     icon: (
       <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -50,8 +61,16 @@ const NAV_ITEMS = [
   },
 ];
 
+
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const vaiTro = (session?.user as ExtendedUser | undefined)?.vaiTro ?? '';
+
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (!item.requiredRoles) return true;
+    return item.requiredRoles.includes(vaiTro);
+  });
 
   return (
     <aside className="sidebar">
@@ -79,7 +98,7 @@ export function Sidebar() {
             Chức năng
           </span>
         </div>
-        {NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (
             <Link
