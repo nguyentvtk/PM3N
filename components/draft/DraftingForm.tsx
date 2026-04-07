@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, FileText, CheckCircle, AlertCircle, Loader2, ChevronDown } from 'lucide-react';
-import type { DuAn, HoSo } from '@/types';
+import type { HoSo } from '@/types';
 
 interface DraftingFormProps {
   onSuccess: (data: HoSo) => void;
@@ -18,38 +18,68 @@ const DOCUMENT_TYPES = [
   'Thông báo'
 ];
 
-const MUC_DO_OPTIONS = ['Thường', 'Khẩn', 'Thượng khẩn', 'Mật', 'Tối mật'];
+// Chỉ 2 mức độ ưu tiên theo yêu cầu
+const MUC_DO_OPTIONS = ['Thường', 'Khẩn'];
+
+// Cơ quan / Bộ phận trình — label → ký hiệu
+const BO_PHAN_OPTIONS = [
+  { label: 'Văn phòng', value: 'VP' },
+  { label: 'Kỹ thuật thẩm định', value: 'KTTĐ' },
+  { label: 'Tài chính Kế toán', value: 'TCKT' },
+  { label: 'Ban QLDA xã', value: 'BQLDA' },
+];
+
+interface SettingProject {
+  MSDA: string;
+  TenDuAn: string;
+  Nam: string;
+}
+
+interface LanhDao {
+  MaNV: string;
+  Ten: string;
+  ChucVu: string;
+}
 
 export default function DraftingForm({ onSuccess }: DraftingFormProps) {
-  const [projects, setProjects] = useState<DuAn[]>([]);
-  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [settingProjects, setSettingProjects] = useState<SettingProject[]>([]);
+  const [lanhDaoList, setLanhDaoList] = useState<LanhDao[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [selectedDocType, setSelectedDocType] = useState<string>(DOCUMENT_TYPES[0]);
   const [selectedMucDo, setSelectedMucDo] = useState<string>(MUC_DO_OPTIONS[0]);
+  const [selectedLanhDao, setSelectedLanhDao] = useState<string>('');
+  const [selectedBoPhan, setSelectedBoPhan] = useState<string>('');
   const [tenTaiLieu, setTenTaiLieu] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Fetch projects
+  // Fetch dữ liệu từ Setting sheet và Lãnh đạo
   useEffect(() => {
-    async function fetchProjects() {
+    async function fetchData() {
       try {
-        const res = await fetch('/api/projects');
+        const res = await fetch('/api/settings');
         const json = await res.json();
         if (json.success) {
-          setProjects(json.data);
-          if (json.data.length > 0) setSelectedProject(json.data[0].MaDA);
+          setSettingProjects(json.data.projects);
+          setLanhDaoList(json.data.lanhDaoList);
+          if (json.data.projects.length > 0) {
+            setSelectedProject(json.data.projects[0].TenDuAn);
+          }
+          if (json.data.lanhDaoList.length > 0) {
+            setSelectedLanhDao(json.data.lanhDaoList[0].Ten);
+          }
         }
       } catch (err) {
-        console.error('Lỗi khi tải dự án:', err);
+        console.error('Lỗi khi tải dữ liệu:', err);
       } finally {
-        setLoadingProjects(false);
+        setLoadingData(false);
       }
     }
-    fetchProjects();
+    fetchData();
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -90,14 +120,18 @@ export default function DraftingForm({ onSuccess }: DraftingFormProps) {
     setSubmitting(true);
     setError(null);
 
-    const projectObj = projects.find(p => p.MaDA === selectedProject);
+    // Tìm MSDA tương ứng với tên dự án đã chọn
+    const projectObj = settingProjects.find((p) => p.TenDuAn === selectedProject);
+
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('maDA', selectedProject);
-    formData.append('tenDuan', projectObj?.TenDA || '');
+    formData.append('maDA', projectObj?.MSDA || selectedProject);
+    formData.append('tenDuan', selectedProject);
     formData.append('loaiVanBan', selectedDocType);
     formData.append('tenTaiLieu', tenTaiLieu);
     formData.append('mucDo', selectedMucDo);
+    formData.append('lanhDaoDuyet', selectedLanhDao);
+    formData.append('kyhieuDVtrinh', selectedBoPhan);
 
     try {
       const res = await fetch('/api/ho-so/draft', {
@@ -121,23 +155,26 @@ export default function DraftingForm({ onSuccess }: DraftingFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Dự án */}
+
+        {/* Dự án — từ sheet Setting */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Dự án liên quan</label>
+          <label className="text-sm font-medium text-slate-700">Dự án</label>
           <div className="relative">
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              disabled={loadingProjects}
+              disabled={loadingData}
               title="Chọn dự án"
               className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2.5 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 glass"
             >
-              {loadingProjects ? (
+              {loadingData ? (
                 <option>Đang tải...</option>
+              ) : settingProjects.length === 0 ? (
+                <option value="">-- Chưa có dự án --</option>
               ) : (
-                projects.map((p) => (
-                  <option key={p.MaDA} value={p.MaDA}>
-                    {p.MaDA} - {p.TenDA}
+                settingProjects.map((p) => (
+                  <option key={p.MSDA} value={p.TenDuAn}>
+                    {p.TenDuAn}
                   </option>
                 ))
               )}
@@ -164,7 +201,7 @@ export default function DraftingForm({ onSuccess }: DraftingFormProps) {
           </div>
         </div>
 
-        {/* Tên tài liệu */}
+        {/* Tên tài liệu / Trích yếu — full width */}
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-medium text-slate-700">Tên tài liệu / Trích yếu</label>
           <input
@@ -177,19 +214,21 @@ export default function DraftingForm({ onSuccess }: DraftingFormProps) {
           />
         </div>
 
-        {/* Mức độ */}
+        {/* Mức độ ưu tiên — chỉ 2 lựa chọn: Thường / Khẩn */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Mức độ khẩn</label>
-          <div className="flex flex-wrap gap-2">
+          <label className="text-sm font-medium text-slate-700">Mức độ ưu tiên</label>
+          <div className="flex gap-3">
             {MUC_DO_OPTIONS.map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setSelectedMucDo(m)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                   selectedMucDo === m
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? m === 'Khẩn'
+                      ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-200'
+                      : 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200'
+                    : 'bg-white/50 text-slate-600 border-slate-200 hover:bg-slate-50'
                 }`}
               >
                 {m}
@@ -197,6 +236,55 @@ export default function DraftingForm({ onSuccess }: DraftingFormProps) {
             ))}
           </div>
         </div>
+
+        {/* Lãnh đạo duyệt — Giám đốc / Phó Giám đốc */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700">Lãnh đạo duyệt</label>
+          <div className="relative">
+            <select
+              value={selectedLanhDao}
+              onChange={(e) => setSelectedLanhDao(e.target.value)}
+              disabled={loadingData}
+              title="Chọn lãnh đạo duyệt"
+              className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2.5 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 glass"
+            >
+              {loadingData ? (
+                <option>Đang tải...</option>
+              ) : lanhDaoList.length === 0 ? (
+                <option value="">-- Chưa có dữ liệu --</option>
+              ) : (
+                lanhDaoList.map((ld) => (
+                  <option key={ld.MaNV} value={ld.Ten}>
+                    {ld.Ten} ({ld.ChucVu})
+                  </option>
+                ))
+              )}
+            </select>
+            <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Cơ quan / Bộ phận trình — full width */}
+        <div className="space-y-2 md:col-span-2">
+          <label className="text-sm font-medium text-slate-700">Cơ quan / Bộ phận trình</label>
+          <div className="relative">
+            <select
+              value={selectedBoPhan}
+              onChange={(e) => setSelectedBoPhan(e.target.value)}
+              title="Chọn bộ phận trình"
+              className="w-full bg-white/50 border border-slate-200 rounded-lg px-4 py-2.5 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 glass"
+            >
+              <option value="">-- Chọn bộ phận --</option>
+              {BO_PHAN_OPTIONS.map((bp) => (
+                <option key={bp.value} value={bp.value}>
+                  {bp.label} ({bp.value})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+
       </div>
 
       {/* File Upload Zone */}

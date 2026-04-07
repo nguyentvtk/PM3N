@@ -240,6 +240,28 @@ export async function getAllProjects(): Promise<DuAn[]> {
   return getSheetData<DuAn>('Tong_Hop_Du_An');
 }
 
+/** Lấy danh sách dự án từ sheet Setting (cột A=MSDA, B=TenDuAn, C=Nam) */
+export async function getSettingProjects(): Promise<{ MSDA: string; TenDuAn: string; Nam: string }[]> {
+  const sheets = await getSheetsClient();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: 'Setting!A2:C',
+  });
+  const rows = response.data.values ?? [];
+  return rows
+    .filter((r) => r[0] && r[1])
+    .map((r) => ({ MSDA: r[0] as string, TenDuAn: r[1] as string, Nam: (r[2] as string) ?? '' }));
+}
+
+/** Lấy danh sách Lãnh đạo (Giám đốc, Phó Giám đốc) từ sheet Nguoi_dung */
+export async function getLanhDaoList(): Promise<{ MaNV: string; Ten: string; ChucVu: string }[]> {
+  const data = await getSheetData<NguoiDung>('Nguoi_dung');
+  return data
+    .filter((u) => u.ChucVu === 'Giám đốc' || u.ChucVu === 'Phó Giám đốc')
+    .map((u) => ({ MaNV: u.MaNV, Ten: u.Ten, ChucVu: u.ChucVu }));
+}
+
+
 // ============================================================
 // HO_SO specific functions
 // ============================================================
