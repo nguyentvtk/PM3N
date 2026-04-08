@@ -66,15 +66,29 @@ export async function POST(req: NextRequest) {
 
     const modifiedPdfBytes = await pdfDoc.save();
 
-    // 4. Lưu đè lên Drive (hoặc tạo file mới)
-    // Ở bước này ta upload đè (update content)
-    await drive.files.update({
-      fileId: fileId,
-      media: {
-        mimeType: 'application/pdf',
-        body: Buffer.from(modifiedPdfBytes),
-      },
+    // 4. Lưu đè lên Drive thông qua GAS Proxy (tránh lỗi quota Service Account)
+    const gasUrl = process.env.GAS_WEB_APP_URL;
+    if (!gasUrl) {
+      return NextResponse.json({ success: false, error: 'Chưa cấu hình GAS_WEB_APP_URL' }, { status: 500 });
+    }
+
+    const gasRes = await fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        resource: 'drive',
+        action: 'update_file',
+        data: {
+          fileId: fileId,
+          fileContent: Buffer.from(modifiedPdfBytes).toString('base64'),
+        },
+      }),
     });
+
+    const gasJson = await gasRes.json();
+    if (!gasJson.success) {
+      throw new Error(gasJson.error?.message || 'GAS proxy update thất bại');
+    }
 
     return NextResponse.json({
       success: true,

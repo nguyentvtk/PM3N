@@ -112,13 +112,29 @@ export async function POST(req: NextRequest) {
         sign: () => Promise.resolve(signatureBuffer)
       });
 
-      await drive.files.update({
-        fileId: fileId,
-        media: {
-          mimeType: 'application/pdf',
-          body: Buffer.from(signedPdf),
-        },
+      // 4. Lưu đè lên Drive thông qua GAS Proxy (tránh lỗi quota Service Account)
+      const gasUrl = process.env.GAS_WEB_APP_URL;
+      if (!gasUrl) {
+        return NextResponse.json({ success: false, error: 'Chưa cấu hình GAS_WEB_APP_URL' }, { status: 500 });
+      }
+
+      const gasRes = await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resource: 'drive',
+          action: 'update_file',
+          data: {
+            fileId: fileId,
+            fileContent: Buffer.from(signedPdf).toString('base64'),
+          },
+        }),
       });
+
+      const gasJson = await gasRes.json();
+      if (!gasJson.success) {
+        throw new Error(gasJson.error?.message || 'GAS proxy sign update thất bại');
+      }
 
       const signTime = new Date().toISOString();
       await updateHoSoSignature(

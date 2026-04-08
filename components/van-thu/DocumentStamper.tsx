@@ -142,12 +142,10 @@ export default function DocumentStamper({ maHoSo, pdfUrl, onSuccess }: DocumentS
           {/* Overlay Marker */}
           {stampPos && (
              <div 
-               className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-red-500 bg-red-500/20 flex items-center justify-center"
+               className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-red-500 bg-red-500/20 flex items-center justify-center w-[120px] h-[120px]"
                style={{ 
-                 left: stampPos.x * scale, 
-                 top: stampPos.y * scale,
-                 width: 80 * scale,
-                 height: 80 * scale,
+                 left: `${stampPos.x * scale}px`, 
+                 top: `${stampPos.y * scale}px`,
                }}
              >
                <span className="text-[10px] font-bold text-red-600 bg-white/80 px-1 rounded">DẤU</span>
