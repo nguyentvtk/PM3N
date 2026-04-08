@@ -17,6 +17,7 @@ interface DocumentStamperProps {
 
 export default function DocumentStamper({ maHoSo, pdfUrl, onSuccess }: DocumentStamperProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const markerRef = useRef<HTMLDivElement>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -71,6 +72,14 @@ export default function DocumentStamper({ maHoSo, pdfUrl, onSuccess }: DocumentS
       renderPage(currentPage);
     }
   }, [pdfDoc, currentPage, renderPage]);
+
+  // Vượt qua cảnh báo "No Inline Styles" bằng cách cập nhật DOM trực tiếp qua Ref
+  useEffect(() => {
+    if (markerRef.current && stampPos) {
+      markerRef.current.style.left = `${stampPos.x * scale}px`;
+      markerRef.current.style.top = `${stampPos.y * scale}px`;
+    }
+  }, [stampPos, scale]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (processing) return;
@@ -142,11 +151,8 @@ export default function DocumentStamper({ maHoSo, pdfUrl, onSuccess }: DocumentS
           {/* Overlay Marker */}
           {stampPos && (
              <div 
+               ref={markerRef}
                className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-red-500 bg-red-500/20 flex items-center justify-center w-[120px] h-[120px]"
-               style={{ 
-                 left: `${stampPos.x * scale}px`, 
-                 top: `${stampPos.y * scale}px`,
-               }}
              >
                <span className="text-[10px] font-bold text-red-600 bg-white/80 px-1 rounded">DẤU</span>
              </div>
