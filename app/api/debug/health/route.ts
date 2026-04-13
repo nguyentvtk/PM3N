@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth-config';
 import { getGoogleAuth } from '@/lib/google-auth';
 import { google } from 'googleapis';
 
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  
-  // Chỉ cho phép Admin hoặc nếu chưa đăng nhập thì kiểm tra Secret Key (nếu có cấu hình)
-  // Để đơn giản cho user gỡ lỗi, ta cho phép xem thông tin cơ bản
-  
-  const results: any = {
+export async function GET(_req: NextRequest) {
+  const results: {
+    timestamp: string;
+    environment: Record<string, string>;
+    checks: Record<string, { 
+      status: string; 
+      message?: string; 
+      title?: string; 
+      tabs?: (string | null | undefined)[]; 
+      response?: string; 
+      hint?: string 
+    }>;
+  } = {
     timestamp: new Date().toISOString(),
     environment: {
       GOOGLE_SPREADSHEET_ID: process.env.GOOGLE_SPREADSHEET_ID ? '✅ Đã cấu hình' : '❌ Thiếu',
@@ -31,15 +35,16 @@ export async function GET(req: NextRequest) {
       const res = await sheets.spreadsheets.get({ spreadsheetId: ssId });
       results.checks.sheets = {
         status: 'OK',
-        title: res.data.properties?.title,
-        tabs: res.data.sheets?.map(s => s.properties?.title)
+        title: res.data.properties?.title || 'Không rõ tiêu đề',
+        tabs: res.data.sheets?.map(s => s.properties?.title) || []
       };
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as Error;
     results.checks.sheets = {
       status: 'ERROR',
-      message: err.message,
-      hint: err.message.includes('invalid_grant') ? 'Kiểm tra lại Email và Private Key của Service Account' : 'Kiểm tra quyền truy cập của Service Account vào Sheet'
+      message: error.message,
+      hint: error.message.includes('invalid_grant') ? 'Kiểm tra lại Email và Private Key của Service Account' : 'Kiểm tra quyền truy cập của Service Account vào Sheet'
     };
   }
 
@@ -53,10 +58,11 @@ export async function GET(req: NextRequest) {
         status: 'OK',
         response: text.substring(0, 100)
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       results.checks.gas = {
         status: 'ERROR',
-        message: err.message
+        message: error.message
       };
     }
   }
