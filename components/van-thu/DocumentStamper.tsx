@@ -132,15 +132,20 @@ export default function DocumentStamper({ maHoSo, pdfUrl, onSuccess }: DocumentS
             {/* Marker hiển thị vị trí đã chọn */}
             {stampPos && (
               <div
-                className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 border-3 border-dashed border-red-500 bg-red-500/20 flex items-center justify-center rounded-full shadow-lg shadow-red-500/30"
+                className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2"
                 style={{
                   left: `${stampPos.x}%`,
                   top: `${stampPos.y}%`,
-                  width: '100px',
-                  height: '100px',
+                  width: '120px',
+                  height: '120px',
                 }}
               >
-                <span className="text-[10px] font-black text-red-600 bg-white/90 px-2 py-0.5 rounded-full uppercase tracking-wider">DẤU</span>
+                <img 
+                  src="/assets/stamp.png" 
+                  alt="Con dấu" 
+                  className="w-full h-full object-contain opacity-70 drop-shadow-lg"
+                  draggable={false}
+                />
               </div>
             )}
           </div>

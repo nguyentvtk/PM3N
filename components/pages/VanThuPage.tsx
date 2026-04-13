@@ -1,13 +1,19 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { getTrangThaiConfig, MUC_DO_CONFIG, formatDateTime, apiGet } from '@/lib/utils';
-import type { HoSo } from '@/types';
+import type { HoSo, NguoiDungPublic } from '@/types';
 import Link from 'next/link';
 import { RefreshCw, FileText, ChevronRight, Inbox } from 'lucide-react';
 
 export function VanThuPage() {
   const [hoSoList, setHoSoList] = useState<HoSo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allUsers, setAllUsers] = useState<NguoiDungPublic[]>([]);
+
+  const getUserName = (maNV: string) => {
+    const u = allUsers.find(user => user.MaNV === maNV);
+    return u ? u.Ten : maNV;
+  };
 
   const load = useCallback(() => {
     setLoading(true);
@@ -20,6 +26,10 @@ export function VanThuPage() {
 
   useEffect(() => {
     load();
+    // Fetch all users for name lookup
+    apiGet<NguoiDungPublic[]>('/api/sheets/nguoi-dung')
+      .then(setAllUsers)
+      .catch(console.error);
   }, [load]);
 
   return (
@@ -100,7 +110,7 @@ export function VanThuPage() {
                          </div>
                       </td>
                       <td className="px-8 py-7">
-                        <p className="text-xs font-bold text-slate-300">{hs.NguoiTrinh}</p>
+                        <p className="text-xs font-bold text-slate-300">{getUserName(hs.NguoiTrinh)}</p>
                         <p className="text-[10px] text-slate-500 mt-1 uppercase font-bold tracking-tighter">
                           {hs.NgayTrinh ? formatDateTime(hs.NgayTrinh).split(' ')[0] : '—'}
                         </p>

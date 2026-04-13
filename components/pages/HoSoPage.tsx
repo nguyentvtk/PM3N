@@ -24,11 +24,22 @@ export function HoSoPage() {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<SettingProject[]>([]);
   const [leaders, setLeaders] = useState<NguoiDungPublic[]>([]);
+  const [allUsers, setAllUsers] = useState<NguoiDungPublic[]>([]);
   const [filter, setFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [selectedHoSo, setSelectedHoSo] = useState<HoSo | null>(null);
   const [approving, setApproving] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'alphabet'>('date');
+
+  // Lookup helpers: MaNV → Tên, MaDA → Tên Dự án
+  const getUserName = (maNV: string) => {
+    const u = allUsers.find(user => user.MaNV === maNV);
+    return u ? u.Ten : maNV;
+  };
+  const getProjectName = (maDA: string) => {
+    const p = projects.find(proj => proj.MSDA === maDA);
+    return p ? p.TenDuAn : maDA;
+  };
 
 
   // Form state
@@ -62,8 +73,9 @@ export function HoSoPage() {
       .then(r => r.json())
       .then(json => { if (json.success) setProjects(json.data.projects); })
       .catch(console.error);
-    // Fetch leaders
-    apiGet<NguoiDungPublic[]>('/api/sheets/nguoi-dung?vaiTro=lanh_dao').then(data => {
+    // Fetch ALL users (for name lookup)
+    apiGet<NguoiDungPublic[]>('/api/sheets/nguoi-dung').then(data => {
+      setAllUsers(data);
       const filtered = data.filter(u => u.ChucVu.includes('Giám đốc') || u.ChucVu.includes('Phó Giám đốc'));
       setLeaders(filtered);
     }).catch(console.error);
@@ -384,10 +396,10 @@ export function HoSoPage() {
                       <td className="text-primary max-w-[200px]">
                         <span className="block truncate font-medium text-sm">{hs.TenTaiLieu}</span>
                         <span className="text-xs text-muted">
-                          Trình: {hs.NguoiTrinh}
+                          Trình: {getUserName(hs.NguoiTrinh)}
                         </span>
                       </td>
-                      <td><span className="mono text-xs text-slate-400">{hs.MaDA || '—'}</span></td>
+                      <td><span className="text-xs text-slate-400">{hs.MaDA ? getProjectName(hs.MaDA) : '—'}</span></td>
                       <td>
                         <span className={`text-xs font-medium ${mucDoCfg?.color}`}>{hs.MucDo}</span>
                       </td>
@@ -462,11 +474,11 @@ export function HoSoPage() {
                 <div className="space-y-6">
                    <div>
                      <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">Người trình</p>
-                     <p className="text-sm font-semibold text-white">{selectedHoSo.NguoiTrinh}</p>
+                     <p className="text-sm font-semibold text-white">{getUserName(selectedHoSo.NguoiTrinh)}</p>
                    </div>
                    <div>
                      <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">Lãnh đạo duyệt</p>
-                     <p className="text-sm font-semibold text-white">{selectedHoSo.LanhDaoDuyet}</p>
+                     <p className="text-sm font-semibold text-white">{getUserName(selectedHoSo.LanhDaoDuyet)}</p>
                    </div>
                    <div>
                      <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">Ngày trình</p>
