@@ -1,13 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Stamp, MapPin, Undo2 } from 'lucide-react';
+import { Loader2, Stamp, MapPin, Undo2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Cấu hình Worker cho PDF.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface DocumentStamperProps {
   maHoSo: string;
@@ -16,97 +12,57 @@ interface DocumentStamperProps {
 }
 
 /**
- * Trình đóng dấu văn bản PDF chuyên nghiệp
+ * Trích xuất file ID từ Google Drive URL
+ */
+function extractDriveFileId(url: string): string | null {
+  if (!url) return null;
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]{25,})/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Tạo URL preview cho Google Drive file
+ */
+function getPreviewUrl(url: string): string {
+  const fileId = extractDriveFileId(url);
+  if (fileId) {
+    return `https://drive.google.com/file/d/${fileId}/preview`;
+  }
+  // Nếu không phải Drive URL, thử dùng Google Docs Viewer
+  return `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+}
+
+/**
+ * Trình đóng dấu văn bản — sử dụng Google Drive Preview (iframe)
+ * Hỗ trợ cuộn chuột để xem nhiều trang, nhấp chọn vị trí đóng dấu trên lớp overlay.
  */
 export default function DocumentStamper({ maHoSo, pdfUrl, onSuccess }: DocumentStamperProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const markerRef = useRef<HTMLDivElement>(null);
-  const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
-  const [numPages, setNumPages] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [stampPos, setStampPos] = useState<{ x: number; y: number } | null>(null);
-  const scale = 1.618; // Tỷ lệ vàng cho cảm giác cao cấp
+  const [stampMode, setStampMode] = useState(false);
 
+  const previewUrl = getPreviewUrl(pdfUrl);
+  const fileId = extractDriveFileId(pdfUrl);
 
-  useEffect(() => {
-    const loadPdf = async () => {
-      try {
-        setLoading(true);
-        // Chuyển đổi URL Drive sang trực tiếp nếu cần
-        let finalUrl = pdfUrl;
-        const driveMatch = pdfUrl.match(/\/d\/([a-zA-Z0-9_-]{25,})/);
-        if (driveMatch) {
-          finalUrl = `https://drive.google.com/uc?id=${driveMatch[1]}&export=download`;
-        }
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (processing || !stampMode) return;
 
-        const loadingTask = pdfjsLib.getDocument(finalUrl);
-        const pdf = await loadingTask.promise;
-        setPdfDoc(pdf);
-        setNumPages(pdf.numPages);
-        setCurrentPage(pdf.numPages); 
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading PDF:', error);
-        toast.error('Lỗi nạp văn bản: Hãy đảm bảo file ở định dạng PDF và có quyền truy cập.');
-        setLoading(false);
-      }
-    };
-
-
-    if (pdfUrl) loadPdf();
-  }, [pdfUrl]);
-
-  const renderPage = useCallback(async (pageNo: number) => {
-    if (!pdfDoc || !canvasRef.current) return;
-
-    const page = await pdfDoc.getPage(pageNo);
-    const viewport = page.getViewport({ scale });
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-
-    if (!context) return;
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-
-    const renderContext = {
-      canvasContext: context,
-      viewport: viewport,
-    };
-    await page.render(renderContext).promise;
-  }, [pdfDoc, scale]);
-
-  useEffect(() => {
-    if (pdfDoc && canvasRef.current) {
-      renderPage(currentPage);
-    }
-  }, [pdfDoc, currentPage, renderPage]);
-
-  // Vượt qua cảnh báo "No Inline Styles" bằng cách cập nhật DOM trực tiếp qua Ref
-  useEffect(() => {
-    if (markerRef.current && stampPos) {
-      markerRef.current.style.left = `${stampPos.x * scale}px`;
-      markerRef.current.style.top = `${stampPos.y * scale}px`;
-    }
-  }, [stampPos, scale]);
-
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (processing) return;
-
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
+    const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Tính toán tọa độ relative (để gửi lên server)
-    setStampPos({ x: x / scale, y: y / scale });
+    // Tính % để lưu vị trí tương đối
+    const xPercent = Math.round((x / rect.width) * 100);
+    const yPercent = Math.round((y / rect.height) * 100);
+
+    setStampPos({ x: xPercent, y: yPercent });
+    toast.info(`Đã chọn vị trí: ${xPercent}%, ${yPercent}%`);
   };
 
   const handleApplyStamp = async () => {
     if (!stampPos) {
-      toast.warning('Vui lòng chọn vị trí đóng dấu trên PDF');
+      toast.warning('Vui lòng chọn vị trí đóng dấu trên văn bản');
       return;
     }
 
@@ -119,8 +75,8 @@ export default function DocumentStamper({ maHoSo, pdfUrl, onSuccess }: DocumentS
           maHoSo,
           x: stampPos.x,
           y: stampPos.y,
-          pageIndex: currentPage - 1, // 0-indexed
-          scale: 1, // Tỷ lệ con dấu
+          pageIndex: 0,
+          scale: 1,
         }),
       });
 
@@ -138,89 +94,122 @@ export default function DocumentStamper({ maHoSo, pdfUrl, onSuccess }: DocumentS
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center p-20 bg-muted/30 rounded-lg border-2 border-dashed">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Đang tải tài liệu PDF...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col space-y-4">
-      {/* PDF Viewer & Overlay */}
-      <div className="relative border rounded-lg overflow-auto bg-gray-100 max-h-[70vh] flex justify-center p-4">
-        <div className="relative shadow-2xl">
-          <canvas
-            ref={canvasRef}
-            onClick={handleCanvasClick}
-            className="cursor-crosshair bg-white"
-          />
-          
-          {/* Overlay Marker */}
-          {stampPos && (
-             <div 
-               ref={markerRef}
-               className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-red-500 bg-red-500/20 flex items-center justify-center w-[120px] h-[120px]"
-             >
-               <span className="text-[10px] font-bold text-red-600 bg-white/80 px-1 rounded">DẤU</span>
-             </div>
-          )}
-        </div>
+      {/* PDF Viewer qua Google Drive iframe — hỗ trợ cuộn chuột xem nhiều trang */}
+      <div className="relative border border-white/10 rounded-xl overflow-hidden bg-slate-900" style={{ height: '70vh' }}>
+        {/* Loading state */}
+        {!iframeLoaded && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-900">
+            <Loader2 className="w-10 h-10 animate-spin text-blue-400 mb-4" />
+            <p className="text-sm text-slate-400 font-medium">Đang tải tài liệu...</p>
+            <p className="text-xs text-slate-600 mt-1">Cuộn chuột để xem các trang</p>
+          </div>
+        )}
+
+        {/* Google Drive Preview iframe — tự hỗ trợ phân trang & cuộn */}
+        <iframe
+          src={previewUrl}
+          title="PDF Preview"
+          className="w-full h-full border-0"
+          onLoad={() => setIframeLoaded(true)}
+          allow="autoplay"
+          sandbox="allow-scripts allow-same-origin allow-popups"
+        />
+
+        {/* Overlay cho chế độ đặt dấu — chỉ hiện khi bật stampMode */}
+        {stampMode && (
+          <div
+            className="absolute inset-0 z-20 cursor-crosshair"
+            style={{ background: 'rgba(0,0,0,0.05)' }}
+            onClick={handleOverlayClick}
+          >
+            {/* Hướng dẫn */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-xs font-bold px-4 py-2 rounded-full shadow-lg animate-pulse z-30">
+              🎯 Nhấp chuột vào vị trí muốn đặt con dấu
+            </div>
+
+            {/* Marker hiển thị vị trí đã chọn */}
+            {stampPos && (
+              <div
+                className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 border-3 border-dashed border-red-500 bg-red-500/20 flex items-center justify-center rounded-full shadow-lg shadow-red-500/30"
+                style={{
+                  left: `${stampPos.x}%`,
+                  top: `${stampPos.y}%`,
+                  width: '100px',
+                  height: '100px',
+                }}
+              >
+                <span className="text-[10px] font-black text-red-600 bg-white/90 px-2 py-0.5 rounded-full uppercase tracking-wider">DẤU</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap items-center justify-between p-4 bg-white border rounded-lg shadow-sm">
-        <div className="flex items-center space-x-4">
-          <div className="text-sm font-medium">
-            Trang {currentPage} / {numPages}
-          </div>
-          <div className="flex space-x-1">
-             <Button 
-               variant="outline" 
-               size="sm" 
-               disabled={currentPage <= 1 || processing}
-               onClick={() => setCurrentPage(prev => prev - 1)}
-             >
-               Trang trước
-             </Button>
-             <Button 
-               variant="outline" 
-               size="sm" 
-               disabled={currentPage >= numPages || processing}
-               onClick={() => setCurrentPage(prev => prev + 1)}
-             >
-               Trang sau
-             </Button>
-          </div>
-        </div>
+      <div className="flex flex-wrap items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm gap-3">
+        <div className="flex items-center gap-3">
+          {/* Toggle chế độ đặt dấu */}
+          <Button
+            variant={stampMode ? "destructive" : "outline"}
+            size="sm"
+            onClick={() => setStampMode(!stampMode)}
+            disabled={processing}
+            className={stampMode ? 'bg-amber-600 hover:bg-amber-700 text-white' : ''}
+          >
+            <MapPin className="w-4 h-4 mr-2" />
+            {stampMode ? 'Thoát chế độ đặt dấu' : 'Chọn vị trí dấu'}
+          </Button>
 
-        <div className="flex space-x-2">
           {stampPos && (
             <Button variant="ghost" size="sm" onClick={() => setStampPos(null)} disabled={processing}>
               <Undo2 className="w-4 h-4 mr-2" /> Xóa vị trí
             </Button>
           )}
-          <Button 
-            disabled={!stampPos || processing} 
-            onClick={handleApplyStamp}
-            className="bg-red-600 hover:bg-red-700 text-white"
-          >
-            {processing ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Stamp className="w-4 h-4 mr-2" />
-            )}
-            {processing ? 'Đang thực hiện...' : 'Xác nhận Đóng dấu'}
-          </Button>
+
+          {/* Link mở file gốc */}
+          {fileId && (
+            <a
+              href={`https://drive.google.com/file/d/${fileId}/view`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" /> Mở tab mới
+            </a>
+          )}
         </div>
+
+        <Button
+          disabled={!stampPos || processing}
+          onClick={handleApplyStamp}
+          className="bg-red-600 hover:bg-red-700 text-white font-bold px-6"
+        >
+          {processing ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Stamp className="w-4 h-4 mr-2" />
+          )}
+          {processing ? 'Đang xử lý...' : 'Xác nhận Đóng dấu'}
+        </Button>
       </div>
-      
-      {!stampPos && (
-        <div className="flex items-center p-3 text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-200">
-          <MapPin className="w-4 h-4 mr-2" />
-          Mẹo: Nhấp chuột vào bất kỳ vị trí nào trên văn bản để đặt con dấu.
+
+      {/* Hướng dẫn */}
+      {!stampMode && !stampPos && (
+        <div className="flex items-center p-3 text-sm text-amber-300 bg-amber-500/10 rounded-xl border border-amber-500/20">
+          <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
+          <span>
+            <b>Bước 1:</b> Cuộn chuột xem tài liệu để tìm trang cần đóng dấu. 
+            <b> Bước 2:</b> Nhấn nút &quot;Chọn vị trí dấu&quot; rồi nhấp vào vị trí muốn đặt.
+          </span>
+        </div>
+      )}
+
+      {stampPos && !stampMode && (
+        <div className="flex items-center p-3 text-sm text-emerald-300 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+          <Stamp className="w-4 h-4 mr-2 flex-shrink-0" />
+          ✅ Đã chọn vị trí ({stampPos.x}%, {stampPos.y}%). Nhấn &quot;Xác nhận Đóng dấu&quot; để hoàn tất.
         </div>
       )}
     </div>
