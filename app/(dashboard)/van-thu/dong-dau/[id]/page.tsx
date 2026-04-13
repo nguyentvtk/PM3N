@@ -20,7 +20,7 @@ export default function VanThuDongDauPage() {
     const fetchData = async () => {
       try {
         // 1. Lấy thông tin hồ sơ
-        const res = await fetch(`/api/ho-so/${id}`);
+        const res = await fetch(`/api/sheets/ho-so/${id}`);
         const result: ApiResponse<HoSo> = await res.json();
         if (result.success && result.data) {
           setHoSo(result.data);
