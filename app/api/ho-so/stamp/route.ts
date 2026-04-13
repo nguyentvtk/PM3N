@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-config';
-import { getHoSoById } from '@/lib/sheets';
-import { getGoogleAuth } from '@/lib/google-auth';
-import { google } from 'googleapis';
-import { PDFDocument } from 'pdf-lib';
-import fs from 'fs';
-import path from 'path';
+import { updateHoSoStatus, appendLog } from '@/lib/sheets';
 
+/**
+ * POST /api/ho-so/stamp
+ * Xác nhận đóng dấu — cập nhật trạng thái hồ sơ sang 'da_ky'
+ * 
+ * Trong hệ thống nội bộ, thao tác đóng dấu vật lý sẽ do văn thư thực hiện ngoài hệ thống.
+ * API này chỉ ghi nhận rằng bước đóng dấu đã được xác nhận.
+ */
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -15,88 +17,35 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { maHoSo, x, y, pageIndex, scale } = await req.json();
+    const { maHoSo, x, y, pageIndex } = await req.json();
 
-    if (!maHoSo || x === undefined || y === undefined) {
-      return NextResponse.json({ success: false, error: 'Thiếu thông tin maHoSo hoặc tọa độ' }, { status: 400 });
+    if (!maHoSo) {
+      return NextResponse.json({ success: false, error: 'Thiếu maHoSo' }, { status: 400 });
     }
 
-    const hoSo = await getHoSoById(maHoSo);
-    if (!hoSo) return NextResponse.json({ success: false, error: 'Không tìm thấy hồ sơ' }, { status: 404 });
-
-    // 1. Tải file từ Drive
-    const auth = await getGoogleAuth();
-    const drive = google.drive({ version: 'v3', auth });
-    
-    const fileIdMatch = (hoSo.LinkKySo || hoSo.FilePath).match(/\/d\/([a-zA-Z0-9_-]{25,})/);
-    if (!fileIdMatch) return NextResponse.json({ success: false, error: 'Không tìm thấy Google Drive File ID' }, { status: 400 });
-    const fileId = fileIdMatch[1];
-
-    const response = await drive.files.get({ fileId: fileId, alt: 'media' }, { responseType: 'arraybuffer' });
-    const pdfBytes = response.data as ArrayBuffer;
-
-    // 2. Xử lý PDF với pdf-lib
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const pages = pdfDoc.getPages();
-    const targetPageIndex = pageIndex ?? (pages.length - 1); // Mặc định trang cuối
-    const page = pages[targetPageIndex];
-    const { height } = page.getSize();
-
-    // 3. Tải con dấu (Giả định nằm trong public/assets/stamp.png)
-    // Nếu user chưa có, ta dùng một file tạm hoặc báo lỗi
-    const stampPath = path.join(process.cwd(), 'public', 'assets', 'stamp.png');
-    if (!fs.existsSync(stampPath)) {
-       return NextResponse.json({ success: false, error: 'Không tìm thấy file con dấu tại public/assets/stamp.png. Vui lòng upload ảnh con dấu trước.' }, { status: 400 });
-    }
-    const stampBytes = fs.readFileSync(stampPath);
-    const stampImage = await pdfDoc.embedPng(stampBytes);
-
-    // Tính toán tỷ lệ và tọa độ (từ Canvas px sang PDF points)
-    // Tọa độ PDF bắt đầu từ góc dưới bên trái (0,0)
-    // Tọa độ Canvas bắt đầu từ góc trên bên trái
-    const stampWidth = (scale || 1) * 100; // Mặc định 100pt
-    const stampHeight = (stampImage.height / stampImage.width) * stampWidth;
-
-    page.drawImage(stampImage, {
-      x: x,
-      y: height - y - stampHeight, // Chuyển đổi tọa độ Y
-      width: stampWidth,
-      height: stampHeight,
-    });
-
-    const modifiedPdfBytes = await pdfDoc.save();
-
-    // 4. Lưu đè lên Drive thông qua GAS Proxy (tránh lỗi quota Service Account)
-    const gasUrl = process.env.GAS_WEB_APP_URL;
-    if (!gasUrl) {
-      return NextResponse.json({ success: false, error: 'Chưa cấu hình GAS_WEB_APP_URL' }, { status: 500 });
+    // Cập nhật trạng thái sang 'da_ky' 
+    const updated = await updateHoSoStatus(maHoSo, 'da_ky');
+    if (!updated) {
+      return NextResponse.json({ success: false, error: `Không tìm thấy hồ sơ: ${maHoSo}` }, { status: 404 });
     }
 
-    const gasRes = await fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        resource: 'drive',
-        action: 'update_file',
-        data: {
-          fileId: fileId,
-          fileContent: Buffer.from(modifiedPdfBytes).toString('base64'),
-        },
-      }),
-    });
-
-    const gasJson = await gasRes.json();
-    if (!gasJson.success) {
-      throw new Error(gasJson.error?.message || 'GAS proxy update thất bại');
-    }
+    // Ghi log bao gồm tọa độ đã chọn
+    const coordInfo = (x !== undefined && y !== undefined) 
+      ? ` | Vị trí: (${x}%, ${y}%) trang ${(pageIndex ?? 0) + 1}` 
+      : '';
+    await appendLog(
+      maHoSo, 
+      'KY_SO', 
+      `Xác nhận đóng dấu bởi ${session.user.name || session.user.email}${coordInfo}`
+    );
 
     return NextResponse.json({
       success: true,
-      message: 'Đã đóng dấu thành công',
+      message: 'Đã xác nhận đóng dấu thành công',
       data: {
-        fileId,
-        pageIndex: targetPageIndex,
-        coords: { x, y }
+        maHoSo,
+        trangThai: 'da_ky',
+        coords: { x, y, pageIndex }
       }
     });
 
