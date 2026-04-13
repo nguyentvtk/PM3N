@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getGoogleAuth } from '@/lib/google-auth';
 import { google } from 'googleapis';
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const results: {
     timestamp: string;
     environment: Record<string, string>;
