@@ -25,7 +25,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 function getErrorMessage(error: string | null) {
   if (!error) return null;
-  return ERROR_MESSAGES[error] ?? ERROR_MESSAGES.Default;
+  return ERROR_MESSAGES[error] ?? `${ERROR_MESSAGES.Default} (${error})`;
 }
 
 // ── Logo Component ────────────────────────────────────────────────

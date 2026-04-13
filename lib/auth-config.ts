@@ -41,11 +41,13 @@ export const authOptions: NextAuthOptions = {
 
           // So sánh plain text, trim() để loại bỏ khoảng trắng thừa từ Sheet
           const inputPw = credentials.password.trim();
-          const sheetPw = nguoiDung.MatKhau.trim();
-          console.log(`[auth] So sánh mật khẩu: input(${inputPw.length} ký tự) vs sheet(${sheetPw.length} ký tự)`);
+          const sheetPw = (nguoiDung.MatKhau || '').trim();
+          
+          console.log(`[auth] Kiểm tra mật khẩu cho: ${nguoiDung.Email}`);
+          console.log(`[auth] Chi tiết: input("${inputPw}") vs sheet("${sheetPw}")`);
 
           if (inputPw !== sheetPw) {
-            console.log(`[auth] ❌ Mật khẩu không khớp`);
+            console.log(`[auth] ❌ Mật khẩu không khớp cho ${credentials.email}`);
             throw new Error('WRONG_PASSWORD');
           }
 

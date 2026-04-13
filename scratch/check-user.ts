@@ -1,54 +1,25 @@
-import { google } from 'googleapis';
+import { getNguoiDungByEmail } from '../lib/sheets';
 import * as dotenv from 'dotenv';
 import path from 'path';
-import { getGoogleAuth } from '../lib/google-auth';
 
-dotenv.config({ path: path.join(process.cwd(), '.env.local') });
+// Load .env.local
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
-async function checkUser(email: string) {
+async function debug() {
+  const email = 'minhtuantran.tn@gmail.com';
+  console.log(`Checking email: ${email}`);
+  console.log(`GOOGLE_SPREADSHEET_ID: ${process.env.GOOGLE_SPREADSHEET_ID}`);
+  
   try {
-    console.log('--- Initializing Auth ---');
-    const auth = await getGoogleAuth();
-    const sheets = google.sheets({ version: 'v4', auth });
-    
-    const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
-    const range = 'Nguoi_Dung!A:E'; 
-
-    console.log(`--- Fetching Sheets: ${spreadsheetId} ---`);
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range,
-    });
-
-    const rows = response.data.values;
-    if (!rows || rows.length === 0) {
-      console.log('No data found.');
-      return;
-    }
-
-    const headers = rows[0];
-    console.log('Headers:', headers);
-
-    const targetRow = rows.find(r => r[1]?.toLowerCase() === email.toLowerCase());
-    if (targetRow) {
-      console.log('MATCH FOUND!');
-      console.log('Row Data:', targetRow);
-      // Giả sử: [MaNV, Email, Ten, MatKhau, VaiTro]
-      console.log(`MaNV: ${targetRow[0]}`);
-      console.log(`Email: ${targetRow[1]}`);
-      console.log(`MatKhau: "${targetRow[3]}" (Length: ${targetRow[3]?.length || 0})`);
+    const user = await getNguoiDungByEmail(email);
+    if (!user) {
+      console.log('❌ User not found');
     } else {
-      console.log(`User not found: ${email}`);
+      console.log('✅ User found:', JSON.stringify(user, null, 2));
     }
-
-  } catch (err: any) {
-    console.error('ERROR:', err.message);
-    if (err.response) {
-      console.error('Response Status:', err.response.status);
-      console.error('Response Data:', JSON.stringify(err.response.data));
-    }
+  } catch (error) {
+    console.error('❌ Error fetching user:', error);
   }
 }
 
-const targetEmail = process.argv[2] || 'minhtuantran.tn@gmail.com';
-checkUser(targetEmail);
+debug();

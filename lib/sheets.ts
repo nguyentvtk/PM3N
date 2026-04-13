@@ -35,14 +35,17 @@ export async function getSheetData<T>(sheetName: string): Promise<T[]> {
   const rows = response.data.values;
   if (!rows || rows.length <= 1) return [];
 
-  const headers = rows[0] as string[];
-  return rows.slice(1).map((row) => {
-    const obj: Record<string, unknown> = {};
-    headers.forEach((header, i) => {
-      obj[header] = row[i] ?? '';
+  const headers = (rows[0] as string[]).map((h) => h.trim());
+  return rows
+    .slice(1)
+    .filter((row) => row.some((cell) => cell !== '')) // Bỏ qua dòng trống hoàn toàn
+    .map((row) => {
+      const obj: Record<string, unknown> = {};
+      headers.forEach((header, i) => {
+        obj[header] = row[i] ? String(row[i]).trim() : '';
+      });
+      return obj as T;
     });
-    return obj as T;
-  });
 }
 
 /**
