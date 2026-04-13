@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { TRANG_THAI_CONFIG, MUC_DO_CONFIG, LOAI_VB_CONFIG, DON_VI_TRINH_LIST, formatDateTime, apiGet, apiPost, getTrangThaiConfig } from '@/lib/utils';
 import type { HoSo, NguoiDungPublic, ExtendedUser } from '@/types';
 import { useSession } from 'next-auth/react';
@@ -16,6 +17,7 @@ interface SettingProject {
 
 export function HoSoPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const user = session?.user as ExtendedUser | undefined;
 
   const [hoSoList, setHoSoList] = useState<HoSo[]>([]);
@@ -161,7 +163,8 @@ export function HoSoPage() {
       if (result.success) {
         toast.success('Đã phê duyệt và chuyển đổi PDF thành công!');
         setSelectedHoSo(null);
-        load();
+        // Chuyển hướng sang trang công cụ ký số ngay lập tức
+        router.push(`/van-thu/dong-dau/${maHoSo}`);
       } else {
         toast.error(result.error || 'Lỗi khi phê duyệt');
       }
