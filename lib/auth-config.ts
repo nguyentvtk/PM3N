@@ -59,8 +59,13 @@ export const authOptions: NextAuthOptions = {
             name:   nguoiDung.Ten,
             image:  nguoiDung.Avatar ?? null,
           };
-        } catch (err) {
-          console.error('Lỗi khi authorize Credentials:', err);
+        } catch (err: unknown) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const error = err as any;
+          console.error('[auth] ❌ Lỗi khi authorize Credentials:', error.message);
+          if (error.response) {
+            console.error('[auth] Google API Error:', JSON.stringify(error.response.data));
+          }
           if (err instanceof Error) throw err;
           throw new Error('UNKNOWN_ERROR');
         }

@@ -77,7 +77,7 @@ export async function calculateNextSoVanBan(): Promise<number> {
   // Tìm Max trong ngày đó
   let maxNum = 0;
   docsOnPrevDay.forEach((doc: HoSo) => {
-    const n = parseInt(doc.SoVanBan || '0');
+    const n = parseInt(doc.So_VB || '0');
     if (n > maxNum) maxNum = n;
   });
 
@@ -88,7 +88,7 @@ export async function calculateNextSoVanBan(): Promise<number> {
   // 2. Nếu ngày đó trống, lấy Max toàn bộ lịch sử
   let absoluteMax = 0;
   allHoSo.forEach((doc: HoSo) => {
-    const n = parseInt(doc.SoVanBan || '0');
+    const n = parseInt(doc.So_VB || '0');
     if (n > absoluteMax) absoluteMax = n;
   });
 

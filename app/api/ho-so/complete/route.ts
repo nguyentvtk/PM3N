@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         resource: 'drive',
-        action:   'move_to_official',
-        data:     { MaHoSo: maHoSo, SoVanBan: soVanBan },
+        action: 'move_to_official',
+        data: { MaHoSo: maHoSo, So_VB: soVanBan },
       }),
       redirect: 'follow',
     });

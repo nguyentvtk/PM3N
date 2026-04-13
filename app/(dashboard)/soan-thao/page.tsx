@@ -1,105 +1,91 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FileEdit, ArrowLeft, ExternalLink, ShieldCheck } from 'lucide-react';
+import { FileEdit, ArrowLeft, CheckCircle2, ChevronRight } from 'lucide-react';
 import DraftingForm from '@/components/draft/DraftingForm';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import type { HoSo } from '@/types';
 
-const OnlyOfficeEditor = dynamic(() => import('@/components/draft/OnlyOfficeEditor'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-      <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-      <p className="text-slate-500 font-medium italic">Đang khởi tạo trình soạn thảo ONLYOFFICE...</p>
-    </div>
-  )
-});
-
 export default function SoanThaoPage() {
-  const [draftData, setDraftData] = useState<HoSo | null>(null);
+  const [successData, setSuccessData] = useState<HoSo | null>(null);
 
   const handleSuccess = (data: HoSo) => {
-    setDraftData(data);
+    setSuccessData(data);
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 animate-fade-in pb-20">
+      {/* Decorative background elements */}
+      <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full -z-10 pointer-events-none" />
+
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <div className="p-2 bg-blue-600 rounded-lg shadow-lg shadow-blue-200">
-              <FileEdit className="w-6 h-6 text-white" />
+          <h1 className="text-3xl font-black tracking-tighter text-white uppercase italic leading-none flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl shadow-blue-500/20">
+              <FileEdit size={24} />
             </div>
-            Soạn thảo hồ sơ
+            Soạn thảo <span className="text-blue-500">Hồ sơ</span>
           </h1>
-          <p className="mt-2 text-slate-500">Tạo tài liệu mới, tải lên và chỉnh sửa trực tiếp qua OnlyOffice.</p>
+          <p className="mt-3 text-slate-400 text-sm font-medium">Khởi tạo quy trình trình duyệt văn bản mới</p>
         </div>
 
-        {draftData && (
+        {successData && (
           <button
-            onClick={() => setDraftData(null)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm glass"
+            onClick={() => setSuccessData(null)}
+            className="btn-secondary !text-[10px] uppercase font-black tracking-widest flex items-center gap-2"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Quay lại Form
+            <ArrowLeft size={14} />
+            Tạo thêm hồ sơ
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-8">
-        {!draftData ? (
-          <div className="max-w-3xl mx-auto w-full">
-            <div className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden glass p-8">
-              <div className="flex items-center gap-2 mb-6 p-3 bg-blue-50 text-blue-700 rounded-xl text-sm font-medium border border-blue-100">
-                <ShieldCheck className="w-5 h-5" />
-                <span>Hệ thống tự động đồng bộ file lên Google Drive theo cấu trúc dự án.</span>
+      <div className="flex justify-center">
+        {!successData ? (
+          <div className="max-w-3xl w-full">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden p-8 lg:p-12 relative">
+              <div className="absolute top-0 right-0 p-8 opacity-5">
+                <FileEdit size={120} />
               </div>
+              
+              <div className="mb-10">
+                <h2 className="text-xl font-bold text-white mb-2">Thông tin tài liệu</h2>
+                <p className="text-sm text-slate-500 italic">Vui lòng điền đầy đủ thông tin để hệ thống khởi tạo hồ sơ và đồng bộ lên Drive.</p>
+              </div>
+
               <DraftingForm onSuccess={handleSuccess} />
             </div>
           </div>
         ) : (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-5 duration-500">
-            {/* Editor Top Bar Info */}
-            <div className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-xl glass flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600">
-                   <FileEdit className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900">{draftData.TenTaiLieu}</h3>
-                  <p className="text-xs text-slate-500 flex items-center gap-1">
-                    Mã hồ sơ: <span className="font-mono text-blue-600">{draftData.MaHoSo}</span>
-                  </p>
-                </div>
-              </div>
-              <Link
-                href={draftData.FilePath}
-                target="_blank"
-                className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline px-4 py-2 bg-blue-50 rounded-lg transition-all"
-              >
-                <span>Xem trên Google Drive</span>
-                <ExternalLink className="w-4 h-4" />
-              </Link>
-            </div>
+          <div className="max-w-2xl w-full">
+            <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-12 text-center shadow-2xl animate-in zoom-in duration-500">
+               <div className="w-24 h-24 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner ring-1 ring-emerald-500/20">
+                  <CheckCircle2 size={48} />
+               </div>
+               
+               <h2 className="text-3xl font-black text-white hover:text-emerald-400 transition-colors uppercase italic tracking-tighter mb-4">Khởi tạo thành công!</h2>
+               <p className="text-slate-400 font-medium mb-10 leading-relaxed px-6">
+                 Hồ sơ <span className="text-blue-400 font-bold font-mono">&quot;{successData.TenTaiLieu}&quot;</span> đã được tạo và lưu trữ trên Hệ thống. 
+                 Mã định danh: <span className="text-white font-bold">{successData.MaHoSo}</span>.
+               </p>
 
-            {/* Editor Container */}
-            <div className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden glass min-h-[650px]">
-              <OnlyOfficeEditor
-                fileUrl={draftData.FilePath}
-                fileName={draftData.TenTaiLieu}
-                fileType={draftData.TenTaiLieu.split('.').pop() || 'docx'}
-                documentId={draftData.MaHoSo}
-              />
-            </div>
 
-            {/* Bottom Actions */}
-            <div className="flex justify-center gap-4">
-               <button className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all transform hover:-translate-y-0.5 active:translate-y-0">
-                  Hoàn tất & Trình duyệt
-               </button>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Link 
+                    href="/ho-so" 
+                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] uppercase tracking-[0.2em] py-4 rounded-2xl shadow-lg shadow-blue-900/40 transition-all active:scale-95"
+                  >
+                    Xem danh sách <ChevronRight size={14} />
+                  </Link>
+                  <Link 
+                    href={successData.FilePath} 
+                    target="_blank"
+                    className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-slate-300 font-black text-[10px] uppercase tracking-[0.2em] py-4 rounded-2xl border border-white/10 transition-all active:scale-95"
+                  >
+                    Xem trên Drive
+                  </Link>
+               </div>
             </div>
           </div>
         )}

@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         resource: 'drive',
-        action:   'upload_file',
+        action: 'upload_file',
         data: {
           maDA,
           tenDuan,

@@ -11,7 +11,13 @@ export function cn(...inputs: ClassValue[]) {
 // CONFIGURATIONS
 // ============================================================
 
-export const VAI_TRO_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+export interface StatusConfig {
+  label: string;
+  bg: string;
+  color: string;
+}
+
+export const VAI_TRO_CONFIG: Record<string, StatusConfig> = {
   admin:     { label: 'Quản trị viên', bg: 'bg-red-500/10',    color: 'text-red-500' },
   lanh_dao:  { label: 'Lãnh đạo',      bg: 'bg-blue-500/10',   color: 'text-blue-500' },
   van_thu:   { label: 'Văn thư',       bg: 'bg-purple-500/10', color: 'text-purple-500' },
@@ -19,7 +25,7 @@ export const VAI_TRO_CONFIG: Record<string, { label: string; bg: string; color: 
   ke_toan:   { label: 'Kế toán',       bg: 'bg-yellow-500/10', color: 'text-yellow-500' },
 };
 
-export const TRANG_THAI_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+export const TRANG_THAI_CONFIG: Record<string, StatusConfig> = {
   cho_trinh:  { label: 'Chờ trình',    bg: 'bg-slate-500/10',  color: 'text-slate-500' },
   dang_duyet: { label: 'Đang duyệt',   bg: 'bg-blue-500/10',   color: 'text-blue-500' },
   da_duyet:   { label: 'Đã duyệt',    bg: 'bg-indigo-500/10', color: 'text-indigo-500' },
@@ -28,6 +34,11 @@ export const TRANG_THAI_CONFIG: Record<string, { label: string; bg: string; colo
   da_ky:      { label: 'Đã ký số',    bg: 'bg-green-500/10',  color: 'text-green-500' },
   hoan_thanh: { label: 'Hoàn thành',  bg: 'bg-emerald-600/10', color: 'text-emerald-600' },
 };
+
+export function getTrangThaiConfig(trangThai: string): StatusConfig {
+  return TRANG_THAI_CONFIG[trangThai] || { label: trangThai, bg: 'bg-slate-500/10', color: 'text-slate-500' };
+}
+
 
 export const MUC_DO_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
   'Thường':       { label: 'Thường',       bg: 'bg-slate-500/10',  color: 'text-slate-400' },

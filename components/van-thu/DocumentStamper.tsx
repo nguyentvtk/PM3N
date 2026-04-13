@@ -15,6 +15,9 @@ interface DocumentStamperProps {
   onSuccess: () => void;
 }
 
+/**
+ * Trình đóng dấu văn bản PDF chuyên nghiệp
+ */
 export default function DocumentStamper({ maHoSo, pdfUrl, onSuccess }: DocumentStamperProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const markerRef = useRef<HTMLDivElement>(null);
@@ -24,26 +27,33 @@ export default function DocumentStamper({ maHoSo, pdfUrl, onSuccess }: DocumentS
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [stampPos, setStampPos] = useState<{ x: number; y: number } | null>(null);
-  const scale = 1.5; // Tỷ lệ render fixed
+  const scale = 1.618; // Tỷ lệ vàng cho cảm giác cao cấp
+
 
   useEffect(() => {
     const loadPdf = async () => {
       try {
         setLoading(true);
-        // Lưu ý: PDF.js có thể gặp CORS nếu PDF từ Drive. 
-        // Trong thực tế, ta nên proxy file này hoặc dùng Blob URL.
-        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        // Chuyển đổi URL Drive sang trực tiếp nếu cần
+        let finalUrl = pdfUrl;
+        const driveMatch = pdfUrl.match(/\/d\/([a-zA-Z0-9_-]{25,})/);
+        if (driveMatch) {
+          finalUrl = `https://drive.google.com/uc?id=${driveMatch[1]}&export=download`;
+        }
+
+        const loadingTask = pdfjsLib.getDocument(finalUrl);
         const pdf = await loadingTask.promise;
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
-        setCurrentPage(pdf.numPages); // Mặc định hiển thị trang cuối theo yêu cầu
+        setCurrentPage(pdf.numPages); 
         setLoading(false);
       } catch (error) {
         console.error('Error loading PDF:', error);
-        toast.error('Không thể tải PDF. Hãy kiểm tra quyền truy cập file.');
+        toast.error('Lỗi nạp văn bản: Hãy đảm bảo file ở định dạng PDF và có quyền truy cập.');
         setLoading(false);
       }
     };
+
 
     if (pdfUrl) loadPdf();
   }, [pdfUrl]);
