@@ -35,4 +35,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
+# scratch & debug reports
+scratch/
+audit_report*.txt
+build_error_detail.txt
+npm_install_error.txt
+tsc_errors*.txt

@@ -1,2 +1,0 @@
-components/pages/DashboardPage.tsx(138,57): error TS2339: Property 'bg' does not exist on type '{ label: string; color: string; }'.
-components/pages/HoSoPage.tsx(218,57): error TS2339: Property 'bg' does not exist on type '{ label: string; color: string; }'.

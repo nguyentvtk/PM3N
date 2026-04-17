@@ -1,3 +1,0 @@
-npm error code EOVERRIDE
-npm error Override for nodemailer@^7.0.13 conflicts with direct dependency
-npm error A complete log of this run can be found in: C:\Users\nguye\AppData\Local\npm-cache\_logs\2026-04-06T14_01_26_156Z-debug-0.log

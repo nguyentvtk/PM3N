@@ -272,7 +272,8 @@ export async function getLanhDaoList(): Promise<{ MaNV: string; Ten: string; Chu
 const HO_SO_HEADERS: (keyof HoSo)[] = [
   'MaHoSo', 'MaDA', 'TenTaiLieu', 'NguoiTrinh', 'LanhDaoDuyet', 
   'MucDo', 'NgayTrinh', 'TrangThai', 'FilePath', 'LinkKySo', 
-  'TenDuan', 'So_VB', 'LoaiVB', 'Ma_Loaitailieu', 'Kyhieu_DVtrinh', 'DinhKem'
+  'TenDuan', 'So_VB', 'LoaiVB', 'Ma_Loaitailieu', 'Kyhieu_DVtrinh', 'DinhKem',
+  'SignerSerial', 'SignerCA', 'SignTime'
 ];
 
 export async function getAllHoSo(): Promise<HoSo[]> {
