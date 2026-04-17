@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-config';
-import { appendLog, findRowIndex, getSheetData, updateSheetRow } from '@/lib/sheets';
+import { appendLog, findRowIndex, getSheetData, updateSheetRow, HO_SO_HEADERS } from '@/lib/sheets';
 import type { HoSo } from '@/types';
 
-const HO_SO_HEADERS: (keyof HoSo)[] = [
-  'MaHoSo', 'MaDA', 'TenTaiLieu', 'NguoiTrinh', 'LanhDaoDuyet', 
-  'MucDo', 'NgayTrinh', 'TrangThai', 'FilePath', 'LinkKySo', 
-  'TenDuan', 'So_VB', 'LoaiVB', 'Ma_Loaitailieu', 'Kyhieu_DVtrinh', 'DinhKem'
-];
+// HO_SO_HEADERS được import từ sheets.ts
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);

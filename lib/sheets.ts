@@ -269,7 +269,7 @@ export async function getLanhDaoList(): Promise<{ MaNV: string; Ten: string; Chu
 // HO_SO specific functions
 // ============================================================
 
-const HO_SO_HEADERS: (keyof HoSo)[] = [
+export const HO_SO_HEADERS: (keyof HoSo)[] = [
   'MaHoSo', 'MaDA', 'TenTaiLieu', 'NguoiTrinh', 'LanhDaoDuyet', 
   'MucDo', 'NgayTrinh', 'TrangThai', 'FilePath', 'LinkKySo', 
   'TenDuan', 'So_VB', 'LoaiVB', 'Ma_Loaitailieu', 'Kyhieu_DVtrinh', 'DinhKem',

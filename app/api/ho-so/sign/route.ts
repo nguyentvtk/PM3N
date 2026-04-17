@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-config';
-import { getHoSoById, updateHoSoSignature } from '@/lib/sheets';
+import { getHoSoById, updateHoSoSignature, findRowIndex, getSheetData, updateSheetRow, HO_SO_HEADERS } from '@/lib/sheets';
 import { google } from 'googleapis';
 import { getGoogleAuth } from '@/lib/google-auth';
 import { PDFDocument } from 'pdf-lib';
@@ -118,15 +118,19 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Chưa cấu hình GAS_WEB_APP_URL' }, { status: 500 });
       }
 
+      const fileName = (hoSo.TenTaiLieu || maHoSo).replace(/\.pdf$/i, '') + '_DigitalSigned.pdf';
       const gasRes = await fetch(gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           resource: 'drive',
-          action: 'update_file',
+          action: 'upload_file',
           data: {
-            fileId: fileId,
+            maDA: hoSo.MaDA,
+            tenDuan: hoSo.TenDuan,
+            fileName: fileName,
             fileContent: Buffer.from(signedPdf).toString('base64'),
+            subFolder: 'Official'
           },
         }),
       });
@@ -137,12 +141,28 @@ export async function POST(req: NextRequest) {
       }
 
       const signTime = new Date().toISOString();
+      const newFileUrl = gasJson.data?.fileUrl || '';
       await updateHoSoSignature(
         maHoSo,
         signerInfo?.serial || 'N/A',
         signerInfo?.ca || 'N/A',
         signTime
       );
+
+      // Cập nhật LinkKySo cho Digital Sign
+      const rowIndex = await findRowIndex('Ho_So', 'MaHoSo', maHoSo);
+      if (rowIndex !== -1) {
+          const allData = await getSheetData<HoSo>('Ho_So');
+          const current = allData.find(h => h.MaHoSo === maHoSo);
+          if (current) {
+              const updated: HoSo = {
+                  ...current,
+                  TrangThai: 'da_ky',
+                  LinkKySo: newFileUrl,
+              };
+              await updateSheetRow('Ho_So', rowIndex, updated as any, HO_SO_HEADERS);
+          }
+      }
 
       await sendTelegramNotification({
         id: hoSo.MaHoSo,

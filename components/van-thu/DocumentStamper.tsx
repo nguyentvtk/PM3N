@@ -141,7 +141,7 @@ export default function DocumentStamper({ maHoSo, pdfUrl, onSuccess }: DocumentS
                 }}
               >
                 <img 
-                  src="/assets/stamp.jpg" 
+                  src="/assets/stamp.png" 
                   alt="Con dấu" 
                   className="w-full h-full object-contain opacity-70 drop-shadow-lg"
                   draggable={false}
