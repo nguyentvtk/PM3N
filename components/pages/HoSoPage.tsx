@@ -30,6 +30,8 @@ export function HoSoPage() {
   const [selectedHoSo, setSelectedHoSo] = useState<HoSo | null>(null);
   const [approving, setApproving] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'alphabet'>('date');
+  // Kết quả sau khi phê duyệt: chứa URL PDF màu đen vừa tạo
+  const [approvalResult, setApprovalResult] = useState<{ maHoSo: string; pdfUrl: string } | null>(null);
 
   // Lookup helpers: MaNV → Tên, MaDA → Tên Dự án
   const getUserName = (maNV: string) => {
@@ -173,10 +175,19 @@ export function HoSoPage() {
       });
       const result = await res.json();
       if (result.success) {
-        toast.success('Đã phê duyệt và chuyển đổi PDF thành công!');
-        setSelectedHoSo(null);
-        // Chuyển hướng sang trang công cụ ký số ngay lập tức
-        router.push(`/van-thu/dong-dau/${maHoSo}`);
+        toast.success('Đã phê duyệt! Đang tải bản xem trước PDF màu đen...');
+        // Cập nhật lại selectedHoSo với trạng thái mới
+        setSelectedHoSo(prev => prev ? { ...prev, TrangThai: 'da_duyet', LinkKySo: result.data?.pdfUrl || '' } : null);
+        // Lưu kết quả để hiển thị preview PDF
+        if (result.data?.pdfUrl) {
+          setApprovalResult({ maHoSo, pdfUrl: result.data.pdfUrl });
+        } else {
+          // GAS chưa trả về pdfUrl → redirect sang dong-dau
+          toast.warning('Chưa có bản PDF — chuyển sang trang xử lý văn thư.');
+          setSelectedHoSo(null);
+          router.push(`/van-thu/dong-dau/${maHoSo}`);
+        }
+        load(); // refresh list
       } else {
         toast.error(result.error || 'Lỗi khi phê duyệt');
       }
@@ -515,11 +526,31 @@ export function HoSoPage() {
               </div>
 
               {/* Document Viewer */}
-              <div className="flex-1 bg-black p-4 lg:p-8">
-                <DocViewer 
-                  fileUrl={selectedHoSo.FilePath} 
-                  title={selectedHoSo.TenTaiLieu} 
-                />
+              <div className="flex-1 bg-black p-4 lg:p-8 flex flex-col gap-4 overflow-hidden">
+                {/* Banner kết quả phê duyệt — chỉ hiện sau khi approve xong */}
+                {approvalResult && approvalResult.maHoSo === selectedHoSo.MaHoSo && (
+                  <div className="flex items-center justify-between px-5 py-3 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl animate-fade-in flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle size={18} className="text-emerald-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-bold text-emerald-300">Phê duyệt thành công! Đây là bản PDF văn bản màu đen.</p>
+                        <p className="text-[10px] text-emerald-500/80 mt-0.5">Xem trước định dạng trước khi chuyển sang bước ký số.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setSelectedHoSo(null); setApprovalResult(null); router.push(`/van-thu/dong-dau/${approvalResult.maHoSo}`); }}
+                      className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all"
+                    >
+                      Tiếp tục ký số <ChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+                <div className="flex-1 overflow-hidden">
+                  <DocViewer 
+                    fileUrl={approvalResult?.maHoSo === selectedHoSo.MaHoSo && approvalResult.pdfUrl ? approvalResult.pdfUrl : (selectedHoSo.LinkKySo || selectedHoSo.FilePath)} 
+                    title={selectedHoSo.TenTaiLieu} 
+                  />
+                </div>
               </div>
             </div>
           </div>
