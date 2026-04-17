@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
                   TrangThai: 'da_ky',
                   LinkKySo: newFileUrl,
               };
-              await updateSheetRow('Ho_So', rowIndex, updated as any, HO_SO_HEADERS);
+              await updateSheetRow('Ho_So', rowIndex, updated as unknown as Record<string, unknown>, HO_SO_HEADERS);
           }
       }
 

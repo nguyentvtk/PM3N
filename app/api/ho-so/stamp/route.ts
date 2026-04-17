@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-config';
-import { getHoSoById, updateHoSoStatus, appendLog, updateSheetRow, findRowIndex, getSheetData, HO_SO_HEADERS } from '@/lib/sheets';
+import { getHoSoById, appendLog, updateSheetRow, findRowIndex, getSheetData, HO_SO_HEADERS } from '@/lib/sheets';
 import { google } from 'googleapis';
 import { getGoogleAuth } from '@/lib/google-auth';
-import { PDFDocument, rgb, degrees } from 'pdf-lib';
+import { PDFDocument } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
-import type { HoSo, ExtendedUser } from '@/types';
+import type { HoSo } from '@/types';
 
 // Xóa HO_SO_HEADERS nội bộ vì đã import từ sheets.ts
 
@@ -55,14 +55,9 @@ export async function POST(req: NextRequest) {
     const targetPage = pages[pageIndex || 0] || pages[0];
     const { width, height } = targetPage.getSize();
 
-    // 3a. Thử nghiệm chuyển text sang màu đen (Best effort)
-    // Prepend Grayscale Black operators to all content streams
-    pages.forEach(page => {
-      // Dùng drawRectangle màu đen bao phủ toàn bộ nhưng với BlendMode: Color/Luminosity
-      // hoặc đơn giản hơn là chèn toán tử g (grayscale) vào đầu dòng.
-      // Tuy nhiên trong PDF hiện đại, text thường có lệnh màu riêng.
-      // Ta sẽ thực hiện đóng dấu RED lên trên cùng sau khi đã "làm tối" nền nếu cần.
-    });
+    // 3a. Chuyển text sang màu đen (Best effort)
+    // Lưu ý: pdf-lib không hỗ trợ sửa đổi trực tiếp content stream text hiện có.
+    // Văn bản gốc sẽ giữ nguyên màu sắc ban đầu từ file nguồn.
 
     // 3b. Chèn ảnh stamp.png
     const stampPath = path.join(process.cwd(), 'public', 'assets', 'stamp.png');
@@ -128,7 +123,7 @@ export async function POST(req: NextRequest) {
           TrangThai: 'da_ky',
           LinkKySo: newFileUrl,
         };
-        await updateSheetRow('Ho_So', rowIndex, updated as any, HO_SO_HEADERS);
+        await updateSheetRow('Ho_So', rowIndex, updated as unknown as Record<string, unknown>, HO_SO_HEADERS);
       }
     }
 
