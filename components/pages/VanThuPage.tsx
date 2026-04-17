@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getTrangThaiConfig, MUC_DO_CONFIG, formatDateTime, apiGet } from '@/lib/utils';
 import type { HoSo, NguoiDungPublic } from '@/types';
 import Link from 'next/link';
-import { RefreshCw, FileText, ChevronRight, Inbox } from 'lucide-react';
+import { RefreshCw, FileText, ChevronRight, Inbox, ExternalLink } from 'lucide-react';
 
 export function VanThuPage() {
   const [hoSoList, setHoSoList] = useState<HoSo[]>([]);
@@ -121,12 +121,24 @@ export function VanThuPage() {
                         </div>
                       </td>
                       <td className="px-8 py-7 text-right">
-                        <Link 
-                          href={`/van-thu/dong-dau/${hs.MaHoSo}`}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20 active:scale-95 group-hover:-translate-x-1"
-                        >
-                          Xử lý <ChevronRight size={14} />
-                        </Link>
+                        <div className="flex flex-col items-end gap-2">
+                          <Link 
+                            href={`/van-thu/dong-dau/${hs.MaHoSo}`}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20 active:scale-95 group-hover:-translate-x-1"
+                          >
+                            Xử lý <ChevronRight size={14} />
+                          </Link>
+                          {hs.LinkKySo && (
+                            <a
+                              href={hs.LinkKySo}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-emerald-500/20"
+                            >
+                              <ExternalLink size={11} /> Xem PDF đã ký
+                            </a>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

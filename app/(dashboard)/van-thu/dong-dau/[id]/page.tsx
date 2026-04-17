@@ -1,10 +1,10 @@
-"use client";
+  "use client";
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle2, FileText, Calendar, User, Stamp } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileText, Calendar, User, Stamp, ExternalLink, FileCheck } from 'lucide-react';
 import DocumentStamper from '@/components/van-thu/DocumentStamper';
 import { toast } from 'sonner';
 import type { ApiResponse, HoSo, NguoiDungPublic } from '@/types';
@@ -20,29 +20,47 @@ export default function VanThuDongDauPage() {
   const [nguoiTrinh, setNguoiTrinh] = useState<string>('');
   const [completing, setCompleting] = useState(false);
   const [stamped, setStamped] = useState(false);
+  const [signedFileUrl, setSignedFileUrl] = useState<string>('');
+
+  const fetchHoSo = async () => {
+    try {
+      const res = await fetch(`/api/sheets/ho-so/${id}`);
+      const result: ApiResponse<HoSo> = await res.json();
+      if (result.success && result.data) {
+        setHoSo(result.data);
+        // Cập nhật link file đã ký nếu có
+        if (result.data.LinkKySo) {
+          setSignedFileUrl(result.data.LinkKySo);
+        }
+        return result.data;
+      }
+    } catch (error) {
+      console.error('Fetch error:', error);
+    }
+    return null;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         // 1. Lấy thông tin hồ sơ
-        const res = await fetch(`/api/sheets/ho-so/${id}`);
-        const result: ApiResponse<HoSo> = await res.json();
-        if (result.success && result.data) {
-          setHoSo(result.data);
-
-          // 2. Lookup tên người trình từ MaNV
-          try {
-            const nguoiDungRes = await fetch('/api/sheets/nguoi-dung');
-            const nguoiDungResult: ApiResponse<NguoiDungPublic[]> = await nguoiDungRes.json();
-            if (nguoiDungResult.success && nguoiDungResult.data) {
-              const found = nguoiDungResult.data.find(u => u.MaNV === result.data!.NguoiTrinh);
-              setNguoiTrinh(found ? `${found.Ten} (${found.ChucVu})` : result.data!.NguoiTrinh);
-            }
-          } catch {
-            setNguoiTrinh(result.data.NguoiTrinh);
-          }
-        } else {
+        const data = await fetchHoSo();
+        if (!data) {
           toast.error('Không tìm thấy hồ sơ');
+          setLoading(false);
+          return;
+        }
+
+        // 2. Lookup tên người trình từ MaNV
+        try {
+          const nguoiDungRes = await fetch('/api/sheets/nguoi-dung');
+          const nguoiDungResult: ApiResponse<NguoiDungPublic[]> = await nguoiDungRes.json();
+          if (nguoiDungResult.success && nguoiDungResult.data) {
+            const found = nguoiDungResult.data.find(u => u.MaNV === data.NguoiTrinh);
+            setNguoiTrinh(found ? `${found.Ten} (${found.ChucVu})` : data.NguoiTrinh);
+          }
+        } catch {
+          setNguoiTrinh(data.NguoiTrinh);
         }
 
         // 3. Lấy gợi ý số văn bản
@@ -60,6 +78,7 @@ export default function VanThuDongDauPage() {
     };
 
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleNumberChange = (value: string) => {
@@ -67,9 +86,15 @@ export default function VanThuDongDauPage() {
     setIsCustomNumber(value !== suggestedNumber);
   };
 
-  const handleStampSuccess = () => {
+  const handleStampSuccess = async () => {
     setStamped(true);
-    toast.success('Đã xác nhận vị trí đóng dấu!');
+    toast.success('Đã đóng dấu thành công! Đang tải link file...');
+    // Re-fetch để lấy LinkKySo mới nhất từ Sheet
+    const updatedHoSo = await fetchHoSo();
+    if (updatedHoSo?.LinkKySo) {
+      setSignedFileUrl(updatedHoSo.LinkKySo);
+      toast.success('File đã ký sẵn sàng để xem!');
+    }
   };
 
   const handleComplete = async () => {
@@ -195,6 +220,20 @@ export default function VanThuDongDauPage() {
                    <Stamp className="w-4 h-4" />
                    <span className="font-medium">Đã xác nhận vị trí đóng dấu</span>
                  </div>
+               )}
+
+               {/* Nút xem file đã ký — xuất hiện sau khi đóng dấu thành công */}
+               {signedFileUrl && (
+                 <a
+                   href={signedFileUrl}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="flex items-center gap-2 w-full px-4 py-3 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-600/30 text-blue-400 rounded-lg text-sm font-bold transition-all group"
+                 >
+                   <FileCheck className="w-4 h-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                   <span className="flex-1">Xem PDF đã đóng dấu</span>
+                   <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+                 </a>
                )}
 
                <div className="pt-6">
