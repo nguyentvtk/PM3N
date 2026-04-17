@@ -11,6 +11,7 @@ import {
 import { pdflibAddPlaceholder } from '@signpdf/placeholder-pdf-lib';
 import { sendTelegramNotification } from '@/lib/telegram';
 import { createHash } from 'crypto';
+import type { HoSo } from '@/types';
 
 /**
  * API hỗ trợ quy trình ký số 2 bước:
