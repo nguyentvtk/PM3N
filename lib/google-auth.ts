@@ -45,7 +45,8 @@ export async function getGoogleAuth(): Promise<JWT> {
     key,
     scopes: [
       'https://www.googleapis.com/auth/spreadsheets',
-      'https://www.googleapis.com/auth/drive.readonly',
+      'https://www.googleapis.com/auth/drive',          // full drive (copy, create, delete)
+      'https://www.googleapis.com/auth/documents',      // Google Docs API (batchUpdate colors)
     ],
   });
 
