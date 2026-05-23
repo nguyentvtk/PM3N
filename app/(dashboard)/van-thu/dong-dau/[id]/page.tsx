@@ -1,10 +1,10 @@
   "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle2, FileText, Calendar, User, Stamp, ExternalLink, FileCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileText, Calendar, User, Stamp, ExternalLink, FileCheck, Loader2 } from 'lucide-react';
 import DocumentStamper from '@/components/van-thu/DocumentStamper';
 import { toast } from 'sonner';
 import type { ApiResponse, HoSo, NguoiDungPublic } from '@/types';
@@ -21,8 +21,12 @@ export default function VanThuDongDauPage() {
   const [completing, setCompleting] = useState(false);
   const [stamped, setStamped] = useState(false);
   const [signedFileUrl, setSignedFileUrl] = useState<string>('');
+  // Trạng thái đang đợi PDF từ GAS
+  const [pdfConverting, setPdfConverting] = useState(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
 
-  const fetchHoSo = async () => {
+  const fetchHoSo = useCallback(async () => {
     try {
       const res = await fetch(`/api/sheets/ho-so/${id}`);
       const result: ApiResponse<HoSo> = await res.json();
@@ -38,7 +42,51 @@ export default function VanThuDongDauPage() {
       console.error('Fetch error:', error);
     }
     return null;
-  };
+  }, [id]);
+
+  // Poll LinkKySo cho đến khi GAS xong convert PDF
+  const startPollingForPdf = useCallback(() => {
+    if (pollIntervalRef.current) return; // Đang poll rồi
+    pollCountRef.current = 0;
+    setPdfConverting(true);
+    toast.info('Đang tạo PDF màu đen... Sẽ tự cập nhật khi hoàn tất.');
+
+    pollIntervalRef.current = setInterval(async () => {
+      pollCountRef.current += 1;
+      // Tối đa 20 lần poll = 60 giây
+      if (pollCountRef.current > 20) {
+        clearInterval(pollIntervalRef.current!);
+        pollIntervalRef.current = null;
+        setPdfConverting(false);
+        toast.warning('PDF chưa sẵn sàng — bạn có thể dùng file gốc để đóng dấu hoặc thử lại sau.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/sheets/ho-so/${id}`);
+        const result: ApiResponse<HoSo> = await res.json();
+        if (result.success && result.data?.LinkKySo) {
+          clearInterval(pollIntervalRef.current!);
+          pollIntervalRef.current = null;
+          setHoSo(result.data);
+          setSignedFileUrl(result.data.LinkKySo);
+          setPdfConverting(false);
+          toast.success('PDF màu đen đã sẵn sàng! Bạn có thể tiến hành đóng dấu.');
+        }
+      } catch {
+        // ignore, tiếp tục poll
+      }
+    }, 3000);
+  }, [id]);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,7 +99,12 @@ export default function VanThuDongDauPage() {
           return;
         }
 
-        // 2. Lookup tên người trình từ MaNV
+        // 2. Nếu vừa phê duyệt (da_duyet) mà chưa có LinkKySo → GAS đang convert
+        if (data.TrangThai === 'da_duyet' && !data.LinkKySo) {
+          startPollingForPdf();
+        }
+
+        // 3. Lookup tên người trình từ MaNV
         try {
           const nguoiDungRes = await fetch('/api/sheets/nguoi-dung');
           const nguoiDungResult: ApiResponse<NguoiDungPublic[]> = await nguoiDungRes.json();
@@ -63,7 +116,7 @@ export default function VanThuDongDauPage() {
           setNguoiTrinh(data.NguoiTrinh);
         }
 
-        // 3. Lấy gợi ý số văn bản
+        // 4. Lấy gợi ý số văn bản
         const numRes = await fetch('/api/ho-so/next-number');
         const numResult = await numRes.json();
         if (numResult.success) {
@@ -142,6 +195,9 @@ export default function VanThuDongDauPage() {
     );
   }
 
+  // File để hiển thị: ưu tiên PDF (LinkKySo), fallback về file gốc (FilePath)
+  const displayFileUrl = signedFileUrl || hoSo.LinkKySo || hoSo.FilePath;
+
   return (
     <div className="container mx-auto p-4 space-y-6 max-w-6xl pb-20">
       <div className="flex items-center space-x-4">
@@ -151,6 +207,20 @@ export default function VanThuDongDauPage() {
         <h1 className="text-2xl font-bold tracking-tight">Xử lý Văn thư: {hoSo.MaHoSo}</h1>
       </div>
 
+      {/* Banner: đang convert PDF */}
+      {pdfConverting && (
+        <div className="flex items-center gap-3 px-5 py-3 bg-amber-500/15 border border-amber-500/30 rounded-2xl animate-pulse">
+          <Loader2 className="w-5 h-5 text-amber-400 animate-spin flex-shrink-0" />
+          <div>
+            <p className="text-sm font-bold text-amber-300">Đang tạo PDF màu đen...</p>
+            <p className="text-[11px] text-amber-500/80">
+              Hệ thống đang chuyển đổi tài liệu. Sẽ tự động cập nhật khi hoàn tất (~30-60 giây).
+              Trong lúc chờ, bạn có thể đóng dấu trên file gốc.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column: PDF Stamping */}
         <div className="lg:col-span-2 space-y-4">
@@ -159,12 +229,17 @@ export default function VanThuDongDauPage() {
               <CardTitle className="text-lg">Đóng dấu văn bản</CardTitle>
               <CardDescription>
                 Nhấp chuột vào vị trí cần đóng dấu (thường ở cuối trang, cạnh chữ ký lãnh đạo).
+                {pdfConverting && (
+                  <span className="ml-1 text-amber-500 font-medium">
+                    (Đang dùng file gốc — PDF màu đen sẽ sẵn sàng sau)
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <DocumentStamper 
                 maHoSo={hoSo.MaHoSo} 
-                pdfUrl={hoSo.LinkKySo || hoSo.FilePath} 
+                pdfUrl={displayFileUrl} 
                 onSuccess={handleStampSuccess} 
               />
             </CardContent>

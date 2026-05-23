@@ -175,18 +175,10 @@ export function HoSoPage() {
       });
       const result = await res.json();
       if (result.success) {
-        toast.success('Đã phê duyệt! Đang tải bản xem trước PDF màu đen...');
-        // Cập nhật lại selectedHoSo với trạng thái mới
-        setSelectedHoSo(prev => prev ? { ...prev, TrangThai: 'da_duyet', LinkKySo: result.data?.pdfUrl || '' } : null);
-        // Lưu kết quả để hiển thị preview PDF
-        if (result.data?.pdfUrl) {
-          setApprovalResult({ maHoSo, pdfUrl: result.data.pdfUrl });
-        } else {
-          // GAS chưa trả về pdfUrl → redirect sang dong-dau
-          toast.warning('Chưa có bản PDF — chuyển sang trang xử lý văn thư.');
-          setSelectedHoSo(null);
-          router.push(`/van-thu/dong-dau/${maHoSo}`);
-        }
+        toast.success('Đã phê duyệt! Chuyển sang ký số/đóng dấu...');
+        setSelectedHoSo(null);
+        setApprovalResult(null);
+        router.push(`/van-thu/dong-dau/${maHoSo}`);
         load(); // refresh list
       } else {
         toast.error(result.error || 'Lỗi khi phê duyệt');

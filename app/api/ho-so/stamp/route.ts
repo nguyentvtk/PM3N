@@ -87,7 +87,16 @@ export async function POST(req: NextRequest) {
       throw new Error('Chưa cấu hình GAS_WEB_APP_URL');
     }
 
-    const fileName = (hoSo.TenTaiLieu || maHoSo).replace(/\.pdf$/i, '') + '_Signed.pdf';
+    const maLoai = hoSo.Ma_Loaitailieu || '';
+    const kyHieuDV = hoSo.Kyhieu_DVtrinh || '';
+    const tenTaiLieu = hoSo.TenTaiLieu || maHoSo;
+    const soVB = hoSo.So_VB || `HS-${maHoSo}`;
+    
+    let fileName = `${soVB}_${maLoai}_${kyHieuDV}_${tenTaiLieu}`;
+    fileName = fileName.replace(/[\\/:*?"<>|]/g, '-'); // Clean illegal chars
+    if (!fileName.toLowerCase().endsWith('.pdf')) {
+      fileName += '.pdf';
+    }
 
     const gasRes = await fetch(gasUrl, {
       method: 'POST',

@@ -41,22 +41,32 @@ export async function POST(req: NextRequest) {
     // 2. Ghi log
     await appendLog(maHoSo, 'HOAN_THANH', `Hoàn thành bởi ${session.user.name || session.user.email}. Số VB: ${soVanBan}`);
 
-    // 3. Thử gọi GAS để di chuyển file sang Official (non-blocking)
+    // 3. Fire-and-forget: Gọi GAS để di chuyển file sang Official
+    //    Không await → không block response
     const gasUrl = process.env.GAS_WEB_APP_URL;
     if (gasUrl) {
-      try {
-        await fetch(gasUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            resource: 'drive',
-            action: 'move_to_official',
-            data: { MaHoSo: maHoSo, So_VB: soVanBan },
-          }),
+      fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resource: 'drive',
+          action: 'move_to_official',
+          data: { MaHoSo: maHoSo, So_VB: soVanBan },
+        }),
+      })
+        .then(async (r) => {
+          const json = await r.json().catch(() => ({}));
+          if (json.success) {
+            console.log(`[complete] GAS move_to_official OK for ${maHoSo}`);
+          } else {
+            console.warn(`[complete] GAS move_to_official failed for ${maHoSo}:`, json.error);
+          }
+        })
+        .catch((err) => {
+          console.warn(`[complete] GAS fetch error for ${maHoSo}:`, err.message);
         });
-      } catch (gasErr) {
-        console.warn('[ho-so/complete] GAS move_to_official failed (non-blocking):', gasErr);
-      }
+    } else {
+      console.warn('[complete] GAS_WEB_APP_URL chưa được cấu hình — bỏ qua move_to_official');
     }
 
     return NextResponse.json({
